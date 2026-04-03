@@ -45,23 +45,24 @@ export function computeStats(participant, logs) {
   const remaining = current - goal
   const pctToGoal = weighIns > 0 ? lost / (participant.startWeight - goal) : 0
 
-  // Pace: total lost divided by number of days elapsed since first log
+  // Pace: 7-day rolling average (last 7 logs), requires 7+ weigh-ins
+  const PACE_WINDOW = 7
+  const MIN_WEIGH_INS = 7
   let pace = null
-  let projectedDaysLeft = null
-  if (weighIns >= 2) {
-    const firstDate = new Date(myLogs[0].date)
-    const lastDate = new Date(myLogs[myLogs.length - 1].date)
-    const daysSinceFirst = Math.max(1, (lastDate - firstDate) / 86400000)
-    pace = lost / daysSinceFirst
-    if (pace > 0) {
-      projectedDaysLeft = remaining / pace
-    }
-  }
-
   let projectedFinish = null
-  if (projectedDaysLeft !== null && weighIns >= 2) {
-    const lastLogDate = new Date(myLogs[myLogs.length - 1].date)
-    projectedFinish = new Date(lastLogDate.getTime() + projectedDaysLeft * 86400000)
+
+  if (weighIns >= MIN_WEIGH_INS) {
+    const window = myLogs.slice(-PACE_WINDOW)
+    const windowFirst = new Date(window[0].date)
+    const windowLast = new Date(window[window.length - 1].date)
+    const windowDays = Math.max(1, (windowLast - windowFirst) / 86400000)
+    const windowLost = window[0].weight - window[window.length - 1].weight
+    pace = windowLost / windowDays
+
+    if (pace > 0 && remaining > 0) {
+      const daysLeft = remaining / pace
+      projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
+    }
   }
 
   return {
