@@ -3,13 +3,19 @@ import WeightChart from './WeightChart'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
-function ProgressBar({ pct, color }) {
+function ProgressBar({ pct, color, target }) {
   const clamped = Math.min(1, Math.max(0, pct))
+  const targetClamped = Math.min(1, Math.max(0, target))
   return (
-    <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+    <div className="relative w-full bg-slate-800 rounded-full h-2">
       <div
         className="h-2 rounded-full transition-all duration-500"
         style={{ width: `${clamped * 100}%`, backgroundColor: color }}
+      />
+      {/* Linear goal marker */}
+      <div
+        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-white/60"
+        style={{ left: `${targetClamped * 100}%` }}
       />
     </div>
   )
@@ -18,6 +24,7 @@ function ProgressBar({ pct, color }) {
 function StatCard({ stats, rank }) {
   const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, weighIns } = stats
   const isGaining = lost < 0
+  const linearTarget = dayOfCompetition() / COMPETITION_DAYS
 
   return (
     <div className="rounded-2xl p-4 border border-slate-800 bg-slate-900">
@@ -43,7 +50,7 @@ function StatCard({ stats, rank }) {
             {isGaining ? '▲' : '▼'} {Math.abs(pctLost * 100).toFixed(2)}% lost
           </span>
         </div>
-        <ProgressBar pct={isGaining ? 0 : pctToGoal} color={p.color} />
+        <ProgressBar pct={isGaining ? 0 : pctToGoal} color={p.color} target={linearTarget} />
         <div className="flex justify-between text-xs text-slate-500 mt-1">
           <span>{current.toFixed(1)} lbs</span>
           <span>Goal: {goal.toFixed(1)} lbs</span>
