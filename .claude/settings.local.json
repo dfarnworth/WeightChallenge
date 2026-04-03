@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/dfarnwor/AppData/Roaming/Claude/local-agent-mode-sessions/skills-plugin/437689cd-88f3-445d-b979-79a289edcecd/8b554d65-b16f-4132-b8e0-692a1d956d25/skills/xlsx/**)",
+      "Bash(python -c \":*)",
+      "Bash(python3 -c \":*)",
+      "Bash(py -3 -c \":*)",
+      "Bash(where python:*)",
+      "Bash(where python3:*)",
+      "Bash(where py:*)",
+      "Bash(ls /c/Python*)",
+      "Read(//c/Users/dfarnwor/AppData/Local/Programs/**)",
+      "Bash(node -e \"const XLSX = require\\(''xlsx''\\); const wb = XLSX.readFile\\(''C:/Users/dfarnwor/Downloads/weight tracker.xlsx''\\); wb.SheetNames.forEach\\(name => { const ws = wb.Sheets[name]; console.log\\(''=== Sheet:'', name, ''===''\\); console.log\\(JSON.stringify\\(XLSX.utils.sheet_to_json\\(ws, {header:1}\\), null, 2\\)\\); }\\);\")",
+      "Bash(cd /tmp)",
+      "Bash(npm install:*)",
+      "Bash(node -e \":*)",
+      "Bash(npm create:*)",
+      "Bash(cp .env.example .env)",
+      "Bash(npm run:*)"
+    ]
+  }
+}
