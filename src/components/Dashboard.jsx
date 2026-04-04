@@ -1,5 +1,6 @@
 import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, PARTICIPANTS } from '../utils/calculations'
 import WeightChart from './WeightChart'
+import PctLostChart from './PctLostChart'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
@@ -163,6 +164,14 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
           <h2 className="font-semibold text-sm text-slate-300 mb-4">Weight Over Time</h2>
           <WeightChart logs={logs} participants={PARTICIPANTS} />
+        </div>
+      )}
+
+      {/* % Lost chart */}
+      {hasData && (
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+          <h2 className="font-semibold text-sm text-slate-300 mb-4">Cumulative % Lost</h2>
+          <PctLostChart logs={logs} participants={PARTICIPANTS} />
         </div>
       )}
 
