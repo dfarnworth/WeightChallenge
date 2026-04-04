@@ -66,23 +66,28 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen max-w-2xl mx-auto">
-      <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-bold leading-tight">Weight Loss Challenge</h1>
-          <p className="text-xs text-slate-400">Apr 1 – May 30, 2026</p>
-        </div>
-        <button
-          onClick={() => setActiveUser(null)}
-          className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
-        >
-          <span
-            className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
-            style={{ backgroundColor: activeParticipant?.color }}
+      <header className="sticky top-0 z-10 bg-slate-950/90 backdrop-blur border-b border-slate-800 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-lg font-bold leading-tight">Weight Loss Challenge</h1>
+            <p className="text-xs text-slate-400">Apr 1 – May 30, 2026</p>
+          </div>
+          <button
+            onClick={() => setActiveUser(null)}
+            className="flex items-center gap-2 text-sm text-slate-400 hover:text-white transition-colors"
           >
-            {activeParticipant?.name[0]}
-          </span>
-          <span>{activeParticipant?.name}</span>
-        </button>
+            <span
+              className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
+              style={{ backgroundColor: activeParticipant?.color }}
+            >
+              {activeParticipant?.name[0]}
+            </span>
+            <span>{activeParticipant?.name}</span>
+          </button>
+        </div>
+        <p className="text-center text-xs text-slate-500 mt-2">
+          ⚔️ 🛡️ &nbsp;Proverbs 27:17 — As iron sharpens iron, so one man sharpens another&nbsp; 🛡️ ⚔️
+        </p>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-24">

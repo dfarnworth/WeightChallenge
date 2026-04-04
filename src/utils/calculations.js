@@ -3,9 +3,9 @@ export const COMPETITION_END = new Date('2026-05-30')
 export const COMPETITION_DAYS = 60
 
 export const PARTICIPANTS = [
-  { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, stretchWeight: 195, color: '#0ea5e9' },
-  { id: 'dan',   name: 'Dan',   startWeight: 198.3, goalPercent: 0.08, stretchWeight: 179, color: '#a78bfa' },
-  { id: 'paul',  name: 'Paul',  startWeight: 233.4, goalPercent: 0.08, stretchWeight: 210, color: '#34d399' },
+  { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
+  { id: 'dan',   name: 'Dan',   startWeight: 198.3, goalPercent: 0.08, color: '#a78bfa' },
+  { id: 'paul',  name: 'Paul',  startWeight: 233.4, goalPercent: 0.08, color: '#34d399' },
 ]
 
 export function goalWeight(p) {
@@ -45,10 +45,6 @@ export function computeStats(participant, logs) {
   const remaining = current - goal
   const pctToGoal = weighIns > 0 ? lost / (participant.startWeight - goal) : 0
 
-  // Stretch goal bar scaling
-  const stretchRange = participant.startWeight - participant.stretchWeight
-  const pctToStretch = weighIns > 0 ? lost / stretchRange : 0
-  const goalMarkerPct = (participant.startWeight - goal) / stretchRange
 
   // Pace: 7-day rolling average (last 7 logs), requires 7+ weigh-ins
   const PACE_WINDOW = 7
@@ -79,8 +75,7 @@ export function computeStats(participant, logs) {
     pctLost,
     remaining,
     pctToGoal,
-    pctToStretch,
-    goalMarkerPct,
+
     pace,
     projectedFinish,
     logs: myLogs,

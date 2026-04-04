@@ -5,34 +5,26 @@ import LbsLostChart from './LbsLostChart'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
-function ProgressBar({ pct, color, target, goalMarker }) {
+function ProgressBar({ pct, color, target }) {
   const clamped = Math.min(1, Math.max(0, pct))
   const targetClamped = Math.min(1, Math.max(0, target))
-  const goalClamped = Math.min(1, Math.max(0, goalMarker))
   return (
     <div className="relative w-full bg-slate-800 rounded-full h-2">
       <div
         className="h-2 rounded-full transition-all duration-500"
         style={{ width: `${clamped * 100}%`, backgroundColor: color }}
       />
-      {/* 8% goal marker */}
-      <div
-        className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full"
-        style={{ left: `${goalClamped * 100}%`, backgroundColor: color, opacity: 0.9 }}
-        title="8% goal"
-      />
       {/* Linear pace marker */}
       <div
         className="absolute top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-white/60"
         style={{ left: `${targetClamped * 100}%` }}
-        title="On-pace target"
       />
     </div>
   )
 }
 
 function StatCard({ stats, rank }) {
-  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pctToStretch, goalMarkerPct, pace, projectedFinish, weighIns } = stats
+  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, weighIns } = stats
   const isGaining = lost < 0
   const linearTarget = dayOfCompetition() / COMPETITION_DAYS
 
@@ -60,10 +52,10 @@ function StatCard({ stats, rank }) {
             {isGaining ? '▲' : '▼'} {Math.abs(pctLost * 100).toFixed(2)}% lost
           </span>
         </div>
-        <ProgressBar pct={isGaining ? 0 : pctToStretch} color={p.color} target={linearTarget} goalMarker={goalMarkerPct} />
+        <ProgressBar pct={isGaining ? 0 : pctToGoal} color={p.color} target={linearTarget} />
         <div className="flex justify-between text-xs text-slate-500 mt-1">
           <span>{current.toFixed(1)} lbs</span>
-          <span>Stretch: {p.stretchWeight} lbs</span>
+          <span>Goal: {goal.toFixed(1)} lbs</span>
         </div>
       </div>
 
