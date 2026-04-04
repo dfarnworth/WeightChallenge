@@ -5,6 +5,15 @@ import LbsLostChart from './LbsLostChart'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
+function Verse({ reference, text }) {
+  return (
+    <div className="text-center px-4 py-1">
+      <p className="text-xs text-slate-500 italic">"{text}"</p>
+      <p className="text-xs text-slate-600 mt-0.5">{reference}</p>
+    </div>
+  )
+}
+
 function ProgressBar({ pct, color, target }) {
   const clamped = Math.min(1, Math.max(0, pct))
   const targetClamped = Math.min(1, Math.max(0, target))
@@ -160,28 +169,39 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         </div>
       )}
 
+      {hasData && <Verse reference="Psalm 144:1" text="Praise be to the LORD my Rock, who trains my hands for war, my fingers for battle." />}
+
       {/* Weight trend chart */}
       {hasData && (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
-          <h2 className="font-semibold text-sm text-slate-300 mb-4">Weight Over Time</h2>
-          <WeightChart logs={logs} participants={PARTICIPANTS} />
-        </div>
+        <>
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <h2 className="font-semibold text-sm text-slate-300 mb-4">Weight Over Time</h2>
+            <WeightChart logs={logs} participants={PARTICIPANTS} />
+          </div>
+          <Verse reference="Ecclesiastes 4:9-10" text="Two are better than one... if either of them falls down, one can help the other up." />
+        </>
       )}
 
       {/* Lbs lost chart */}
       {hasData && (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
-          <h2 className="font-semibold text-sm text-slate-300 mb-4">Total Lbs Lost</h2>
-          <LbsLostChart logs={logs} participants={PARTICIPANTS} />
-        </div>
+        <>
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <h2 className="font-semibold text-sm text-slate-300 mb-4">Total Lbs Lost</h2>
+            <LbsLostChart logs={logs} participants={PARTICIPANTS} />
+          </div>
+          <Verse reference="1 Thessalonians 5:11" text="Therefore encourage one another and build each other up." />
+        </>
       )}
 
       {/* % Lost chart */}
       {hasData && (
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
-          <h2 className="font-semibold text-sm text-slate-300 mb-4">Cumulative % Lost</h2>
-          <PctLostChart logs={logs} participants={PARTICIPANTS} />
-        </div>
+        <>
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+            <h2 className="font-semibold text-sm text-slate-300 mb-4">Cumulative % Lost</h2>
+            <PctLostChart logs={logs} participants={PARTICIPANTS} />
+          </div>
+          <Verse reference="Colossians 3:23" text="Whatever you do, work at it with all your heart, as working for the Lord." />
+        </>
       )}
 
       {/* Individual stat cards */}

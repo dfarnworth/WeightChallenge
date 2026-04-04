@@ -85,9 +85,10 @@ export default function App() {
             <span>{activeParticipant?.name}</span>
           </button>
         </div>
-        <p className="text-center text-xs text-slate-500 mt-2">
-          ⚔️ 🛡️ &nbsp;Proverbs 27:17 — As iron sharpens iron, so one man sharpens another&nbsp; 🛡️ ⚔️
-        </p>
+        <div className="text-center mt-2">
+          <p className="text-xs text-slate-500 whitespace-nowrap">⚔️ 🛡️ &nbsp;As iron sharpens iron, so one man sharpens another&nbsp; 🛡️ ⚔️</p>
+          <p className="text-xs text-slate-600">Proverbs 27:17</p>
+        </div>
       </header>
 
       <main className="flex-1 overflow-y-auto pb-24">
