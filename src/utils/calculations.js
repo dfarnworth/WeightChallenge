@@ -21,7 +21,7 @@ export function dayOfCompetition() {
 }
 
 export function toDateStr(date) {
-  return date.toISOString().split('T')[0]
+  return date.toLocaleDateString('en-CA', { timeZone: 'America/Chicago' })
 }
 
 export function todayStr() {
