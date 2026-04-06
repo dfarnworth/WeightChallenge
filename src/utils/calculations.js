@@ -1,6 +1,6 @@
 export const COMPETITION_START = new Date('2026-04-01')
-export const COMPETITION_END = new Date('2026-05-30')
-export const COMPETITION_DAYS = 60
+export const COMPETITION_END = new Date('2026-06-01')
+export const COMPETITION_DAYS = 62
 
 export const PARTICIPANTS = [
   { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
@@ -45,12 +45,12 @@ export function computeStats(participant, logs) {
   const remaining = current - goal
   const pctToGoal = weighIns > 0 ? lost / (participant.startWeight - goal) : 0
 
-
   // Pace: 7-day rolling average (last 7 logs), requires 7+ weigh-ins
   const PACE_WINDOW = 7
   const MIN_WEIGH_INS = 7
   let pace = null
   let projectedFinish = null
+  let projectedEndWeight = null
 
   if (weighIns >= MIN_WEIGH_INS) {
     const window = myLogs.slice(-PACE_WINDOW)
@@ -60,9 +60,16 @@ export function computeStats(participant, logs) {
     const windowLost = window[0].weight - window[window.length - 1].weight
     pace = windowLost / windowDays
 
-    if (pace > 0 && remaining > 0) {
-      const daysLeft = remaining / pace
-      projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
+    if (pace > 0) {
+      // Projected date of hitting goal
+      if (remaining > 0) {
+        const daysLeft = remaining / pace
+        projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
+      }
+
+      // Projected weight at end of competition (June 1)
+      const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
+      projectedEndWeight = Math.max(0, current - pace * daysToEnd)
     }
   }
 
@@ -75,9 +82,9 @@ export function computeStats(participant, logs) {
     pctLost,
     remaining,
     pctToGoal,
-
     pace,
     projectedFinish,
+    projectedEndWeight,
     logs: myLogs,
   }
 }

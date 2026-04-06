@@ -33,7 +33,7 @@ function ProgressBar({ pct, color, target }) {
 }
 
 function StatCard({ stats, rank }) {
-  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, weighIns } = stats
+  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, projectedEndWeight, weighIns } = stats
   const isGaining = lost < 0
   const linearTarget = dayOfCompetition() / COMPETITION_DAYS
 
@@ -88,9 +88,13 @@ function StatCard({ stats, rank }) {
           <div className="text-xs text-slate-400">Pace</div>
           <div className="font-bold text-sm">{pace !== null ? `${pace.toFixed(2)}/day` : '—'}</div>
         </div>
-        <div className="bg-slate-800 rounded-xl p-2 col-span-2">
-          <div className="text-xs text-slate-400">Proj. finish</div>
+        <div className="bg-slate-800 rounded-xl p-2">
+          <div className="text-xs text-slate-400">Goal by</div>
           <div className="font-bold text-sm">{formatProjectedFinish(projectedFinish)}</div>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-2">
+          <div className="text-xs text-slate-400">Jun 1 weight</div>
+          <div className="font-bold text-sm">{projectedEndWeight !== null ? `${projectedEndWeight.toFixed(1)} lbs` : '—'}</div>
         </div>
       </div>
     </div>

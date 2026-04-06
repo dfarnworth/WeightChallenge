@@ -63,7 +63,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
               value={date}
               onChange={e => { setDate(e.target.value); setSaved(false) }}
               min="2026-04-01"
-              max="2026-05-30"
+              max="2026-06-01"
               className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:border-sky-500"
             />
           </div>

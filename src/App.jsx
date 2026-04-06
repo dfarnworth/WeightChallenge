@@ -70,7 +70,7 @@ export default function App() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg font-bold leading-tight">Weight Loss Challenge</h1>
-            <p className="text-xs text-slate-400">Apr 1 – May 30, 2026</p>
+            <p className="text-xs text-slate-400">Apr 1 – Jun 1, 2026</p>
           </div>
           <button
             onClick={() => setActiveUser(null)}
