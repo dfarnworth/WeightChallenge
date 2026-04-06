@@ -101,6 +101,7 @@ export default function App() {
             participant={activeParticipant}
             stats={allStats.find(s => s.participant.id === activeUser)}
             onLog={logWeight}
+            onRefresh={loadLogs}
             todayStr={todayStr()}
           />
         )}
