@@ -60,16 +60,14 @@ export function computeStats(participant, logs) {
     const windowLost = window[0].weight - window[window.length - 1].weight
     pace = windowLost / windowDays
 
-    if (pace > 0) {
-      // Projected date of hitting goal
-      if (remaining > 0) {
-        const daysLeft = remaining / pace
-        projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
-      }
+    // Projected weight at end of competition (June 1) — works for gain or loss
+    const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
+    projectedEndWeight = parseFloat((current - pace * daysToEnd).toFixed(1))
 
-      // Projected weight at end of competition (June 1)
-      const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
-      projectedEndWeight = Math.max(0, current - pace * daysToEnd)
+    // Projected date of hitting goal (only meaningful if actively losing)
+    if (pace > 0 && remaining > 0) {
+      const daysLeft = remaining / pace
+      projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
     }
   }
 
