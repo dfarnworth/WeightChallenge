@@ -54,11 +54,19 @@ export function computeStats(participant, logs) {
 
   if (weighIns >= MIN_WEIGH_INS) {
     const window = myLogs.slice(-PACE_WINDOW)
-    const windowFirst = new Date(window[0].date)
     const windowLast = new Date(window[window.length - 1].date)
-    const windowDays = Math.max(1, (windowLast - windowFirst) / 86400000)
-    const windowLost = window[0].weight - window[window.length - 1].weight
-    pace = windowLost / windowDays
+
+    // Compute day-over-day rate for each consecutive pair, then take median
+    const dailyRates = []
+    for (let i = 1; i < window.length; i++) {
+      const days = Math.max(1, (new Date(window[i].date) - new Date(window[i - 1].date)) / 86400000)
+      dailyRates.push((window[i - 1].weight - window[i].weight) / days)
+    }
+    dailyRates.sort((a, b) => a - b)
+    const mid = Math.floor(dailyRates.length / 2)
+    pace = dailyRates.length % 2 !== 0
+      ? dailyRates[mid]
+      : (dailyRates[mid - 1] + dailyRates[mid]) / 2
 
     // Projected weight at end of competition (June 1) — works for gain or loss
     const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
