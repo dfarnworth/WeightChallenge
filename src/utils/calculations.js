@@ -48,9 +48,19 @@ export function computeStats(participant, logs) {
   // Pace: linear regression over rolling 21-day window, requires 7+ weigh-ins
   const ROLLING_DAYS = 21
   const MIN_WEIGH_INS = 7
-  let pace = null
+  let pace = null        // simple average: displayed in UI
+  let regressionPace = null  // regression slope: used for forecasting
   let projectedFinish = null
   let projectedEndWeight = null
+  let regressionData = null
+
+  // Simple average pace for display
+  if (weighIns >= 2) {
+    const firstDate = new Date(myLogs[0].date)
+    const lastDate = new Date(myLogs[myLogs.length - 1].date)
+    const daysElapsed = Math.max(1, (lastDate - firstDate) / 86400000)
+    pace = lost / daysElapsed
+  }
 
   if (weighIns >= MIN_WEIGH_INS) {
     const windowLast = new Date(myLogs[myLogs.length - 1].date)
@@ -70,17 +80,23 @@ export function computeStats(participant, logs) {
     const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0)
     const sumX2 = pts.reduce((s, p) => s + p.x * p.x, 0)
     const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
-    pace = -slope  // negative slope = losing weight = positive pace
+    const intercept = (sumY - slope * sumX) / n
+    regressionPace = -slope
 
     // Projected weight at end of competition (June 1) — works for gain or loss
     const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
-    projectedEndWeight = parseFloat((current - pace * daysToEnd).toFixed(1))
+    projectedEndWeight = parseFloat((current - regressionPace * daysToEnd).toFixed(1))
 
     // Projected date of hitting goal (only meaningful if actively losing)
-    if (pace > 0 && remaining > 0) {
-      const daysLeft = remaining / pace
+    if (regressionPace > 0 && remaining > 0) {
+      const daysLeft = remaining / regressionPace
       projectedFinish = new Date(windowLast.getTime() + daysLeft * 86400000)
     }
+
+    // Pass regression details for chart
+    const originMs = new Date(windowLogs[0].date).getTime()
+    const endDayX = (COMPETITION_END.getTime() - originMs) / 86400000
+    regressionData = { pts, slope, intercept, originMs, endDayX, windowLogs }
   }
 
   return {
@@ -95,6 +111,7 @@ export function computeStats(participant, logs) {
     pace,
     projectedFinish,
     projectedEndWeight,
+    regressionData,
     logs: myLogs,
   }
 }
