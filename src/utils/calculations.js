@@ -45,26 +45,32 @@ export function computeStats(participant, logs) {
   const remaining = current - goal
   const pctToGoal = weighIns > 0 ? lost / (participant.startWeight - goal) : 0
 
-  // Pace: 7-day rolling average (last 7 logs), requires 7+ weigh-ins
-  const PACE_WINDOW = 7
+  // Pace: linear regression over rolling 21-day window, requires 7+ weigh-ins
+  const ROLLING_DAYS = 21
   const MIN_WEIGH_INS = 7
   let pace = null
   let projectedFinish = null
   let projectedEndWeight = null
 
   if (weighIns >= MIN_WEIGH_INS) {
-    const window = myLogs.slice(-PACE_WINDOW)
-    const windowLast = new Date(window[window.length - 1].date)
+    const windowLast = new Date(myLogs[myLogs.length - 1].date)
+    const cutoff = new Date(windowLast)
+    cutoff.setDate(cutoff.getDate() - ROLLING_DAYS)
+    const windowLogs = myLogs.filter(l => new Date(l.date) >= cutoff)
 
-    // Compute day-over-day rate for each consecutive pair, then take median
-    const dailyRates = []
-    for (let i = 1; i < window.length; i++) {
-      const days = Math.max(1, (new Date(window[i].date) - new Date(window[i - 1].date)) / 86400000)
-      dailyRates.push((window[i - 1].weight - window[i].weight) / days)
-    }
-    pace = dailyRates.reduce((sum, r) => sum + r, 0) / dailyRates.length
-    const MAX_PACE = 2.5 / 7
-    if (pace > MAX_PACE) pace = MAX_PACE
+    // Least-squares linear regression: x = days elapsed, y = weight
+    const origin = new Date(windowLogs[0].date).getTime()
+    const pts = windowLogs.map(l => ({
+      x: (new Date(l.date).getTime() - origin) / 86400000,
+      y: l.weight,
+    }))
+    const n = pts.length
+    const sumX  = pts.reduce((s, p) => s + p.x, 0)
+    const sumY  = pts.reduce((s, p) => s + p.y, 0)
+    const sumXY = pts.reduce((s, p) => s + p.x * p.y, 0)
+    const sumX2 = pts.reduce((s, p) => s + p.x * p.x, 0)
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX)
+    pace = -slope  // negative slope = losing weight = positive pace
 
     // Projected weight at end of competition (June 1) — works for gain or loss
     const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
