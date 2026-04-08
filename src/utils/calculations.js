@@ -62,19 +62,10 @@ export function computeStats(participant, logs) {
       const days = Math.max(1, (new Date(window[i].date) - new Date(window[i - 1].date)) / 86400000)
       dailyRates.push((window[i - 1].weight - window[i].weight) / days)
     }
-    const unsortedRates = [...dailyRates]
+    // Trimmed mean: drop highest and lowest, average the rest
     dailyRates.sort((a, b) => a - b)
-    const mid = Math.floor(dailyRates.length / 2)
-    pace = dailyRates.length % 2 !== 0
-      ? dailyRates[mid]
-      : (dailyRates[mid - 1] + dailyRates[mid]) / 2
-
-    if (participant.id === 'dan') {
-      console.log('Dan window weights:', window.map(l => `${l.date}: ${l.weight}`))
-      console.log('Dan daily rates (unsorted):', unsortedRates.map(r => r.toFixed(3)))
-      console.log('Dan daily rates (sorted):', dailyRates.map(r => r.toFixed(3)))
-      console.log('Dan median pace:', pace.toFixed(3), '| daysToEnd:', Math.max(0, (COMPETITION_END - windowLast) / 86400000).toFixed(1))
-    }
+    const trimmed = dailyRates.slice(1, -1)
+    pace = trimmed.reduce((sum, r) => sum + r, 0) / trimmed.length
 
     // Projected weight at end of competition (June 1) — works for gain or loss
     const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
