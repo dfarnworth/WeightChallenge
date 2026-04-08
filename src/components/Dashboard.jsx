@@ -2,6 +2,7 @@ import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, PARTICIPANTS
 import WeightChart from './WeightChart'
 import PctLostChart from './PctLostChart'
 import LbsLostChart from './LbsLostChart'
+import RegressionChart from './RegressionChart'
 
 const MEDALS = ['🥇', '🥈', '🥉']
 
@@ -213,7 +214,20 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <div className="flex flex-col gap-4">
           <h2 className="font-semibold text-sm text-slate-300">Individual Stats</h2>
           {ranked.map((stats, i) => (
-            <StatCard key={stats.participant.id} stats={stats} rank={i} />
+            <div key={stats.participant.id} className="flex flex-col gap-2">
+              <StatCard stats={stats} rank={i} />
+              {stats.regressionData && (
+                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+                  <p className="text-xs text-slate-500 mb-3">21-day regression trend</p>
+                  <RegressionChart
+                    regressionData={stats.regressionData}
+                    color={stats.participant.color}
+                    goal={stats.goal}
+                    startWeight={stats.participant.startWeight}
+                  />
+                </div>
+              )}
+            </div>
           ))}
         </div>
       )}
