@@ -63,6 +63,8 @@ export function computeStats(participant, logs) {
       dailyRates.push((window[i - 1].weight - window[i].weight) / days)
     }
     pace = dailyRates.reduce((sum, r) => sum + r, 0) / dailyRates.length
+    const MAX_PACE = 2.5 / 7
+    if (pace > MAX_PACE) pace = MAX_PACE
 
     // Projected weight at end of competition (June 1) — works for gain or loss
     const daysToEnd = Math.max(0, (COMPETITION_END - windowLast) / 86400000)
