@@ -4,14 +4,20 @@ import {
 } from 'recharts'
 import { formatDate, COMPETITION_END, COMPETITION_START } from '../utils/calculations'
 
-const CustomTooltip = ({ active, payload }) => {
+const CustomTooltip = ({ active, payload, startWeight, goal, totalDays }) => {
   if (!active || !payload?.length) return null
   const d = payload[0]?.payload
-  if (!d) return null
+  if (!d || d.weight == null) return null
+  const paceWeight = startWeight + (goal - startWeight) * (d.x / totalDays)
+  const diff = d.weight - paceWeight
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs shadow-xl">
-      {d.label && <p className="text-slate-400 mb-0.5">{d.label}</p>}
-      <p className="font-semibold text-white">{d.weight?.toFixed(1) ?? d.y?.toFixed(1)} lbs</p>
+      {d.label && <p className="text-slate-400 mb-1">{d.label}</p>}
+      <p className="font-semibold text-white">Actual: {d.weight.toFixed(1)} lbs</p>
+      <p className="text-slate-400">Target: {paceWeight.toFixed(1)} lbs</p>
+      <p className={`font-semibold mt-0.5 ${diff <= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+        {diff <= 0 ? '▼' : '▲'} {Math.abs(diff).toFixed(1)} lbs {diff <= 0 ? 'ahead' : 'behind'}
+      </p>
     </div>
   )
 }
@@ -69,7 +75,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
           ticks={[0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]}
         />
         <YAxis domain={[minY, maxY]} tick={{ fill: '#64748b', fontSize: 10 }} />
-        <Tooltip content={<CustomTooltip />} />
+        <Tooltip content={<CustomTooltip startWeight={startWeight} goal={goal} totalDays={totalDays} />} />
 
         {/* Goal weight line */}
         <ReferenceLine y={goal} stroke={color} strokeDasharray="4 4" strokeOpacity={0.5}
