@@ -144,12 +144,13 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
           <table className="w-full text-sm">
             <thead>
               <tr className="text-xs text-slate-500 uppercase">
-                <th className="text-left px-4 py-2">Name</th>
+                <th className="text-left px-3 py-2">Name</th>
+                <th className="text-right px-2 py-2">Cur</th>
                 <th className="text-right px-2 py-2">Goal</th>
                 <th className="text-right px-2 py-2">Lost</th>
                 <th className="text-right px-2 py-2">% Lost</th>
-                <th className="text-right px-2 py-2">Prev Day</th>
-                <th className="text-right px-4 py-2">Prev %</th>
+                <th className="text-right px-2 py-2">Prev</th>
+                <th className="text-right px-3 py-2">Prev %</th>
               </tr>
             </thead>
             <tbody>
@@ -160,10 +161,11 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                 const prevPct = prevLog ? (prevLog.weight - s.current) / prevLog.weight * 100 : null
                 return (
                   <tr key={s.participant.id} className="border-t border-slate-800">
-                    <td className="px-4 py-3 flex items-center gap-2">
+                    <td className="px-3 py-3 flex items-center gap-1">
                       <span>{MEDALS[i] ?? `#${i + 1}`}</span>
-                      <span className="font-medium" style={{ color: s.participant.color }}>{s.participant.name}</span>
+                      <span className="font-bold" style={{ color: s.participant.color }}>{s.participant.name[0]}</span>
                     </td>
+                    <td className="text-right px-2 py-3 text-slate-300">{s.current.toFixed(1)}</td>
                     <td className="text-right px-2 py-3 text-slate-400">{s.goal.toFixed(1)}</td>
                     <td className={`text-right px-2 py-3 font-medium ${isGaining ? 'text-red-400' : 'text-emerald-400'}`}>
                       {isGaining ? '+' : '-'}{Math.abs(s.lost).toFixed(1)}
@@ -174,7 +176,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                     <td className={`text-right px-2 py-3 text-xs ${prevDelta === null ? 'text-slate-600' : prevDelta > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                       {prevDelta === null ? '—' : `${prevDelta > 0 ? '+' : ''}${prevDelta.toFixed(1)}`}
                     </td>
-                    <td className={`text-right px-4 py-3 text-xs ${prevPct === null ? 'text-slate-600' : prevPct < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+                    <td className={`text-right px-3 py-3 text-xs ${prevPct === null ? 'text-slate-600' : prevPct < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
                       {prevPct === null ? '—' : `${prevPct > 0 ? '+' : ''}${prevPct.toFixed(2)}%`}
                     </td>
                   </tr>
