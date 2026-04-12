@@ -34,17 +34,19 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
   const lineEnd   = { x: endDayX, y: intercept + slope * endDayX }
   const regressionLine = [lineStart, lineEnd]
 
+  // Pace-to-goal line: from last actual weigh-in to goal weight at June 1
+  const lastPt = pts[pts.length - 1]
+  const paceToGoalLine = [
+    { x: lastPt.x, y: lastPt.y },
+    { x: endDayX,  y: goal },
+  ]
+
   // Y axis bounds
   const weights = pts.map(p => p.y)
   const projEnd = intercept + slope * endDayX
   const allY = [...weights, projEnd, goal]
   const minY = Math.floor(Math.min(...allY)) - 2
   const maxY = Math.ceil(Math.max(...allY)) + 2
-
-  // Goal reference line x position
-  const goalX = goal > projEnd
-    ? null  // won't reach goal by end
-    : (goal - intercept) / slope
 
   return (
     <ResponsiveContainer width="100%" height={180}>
@@ -67,6 +69,18 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
         {/* Goal weight line */}
         <ReferenceLine y={goal} stroke={color} strokeDasharray="4 4" strokeOpacity={0.5}
           label={{ value: 'Goal', fill: color, fontSize: 10, position: 'insideTopRight' }} />
+
+        {/* Pace-to-goal line */}
+        <Line
+          data={paceToGoalLine}
+          dataKey="y"
+          stroke="#ffffff"
+          strokeWidth={1.5}
+          strokeDasharray="5 4"
+          dot={false}
+          legendType="none"
+          name="Pace to goal"
+        />
 
         {/* Regression trend line */}
         <Line
