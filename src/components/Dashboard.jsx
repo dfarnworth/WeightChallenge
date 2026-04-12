@@ -34,9 +34,14 @@ function ProgressBar({ pct, color, target }) {
 }
 
 function StatCard({ stats, rank }) {
-  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, projectedEndWeight, weighIns } = stats
+  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, projectedEndWeight, weighIns, logs } = stats
   const isGaining = lost < 0
   const linearTarget = dayOfCompetition() / COMPETITION_DAYS
+
+  // Previous day stats (second-to-last log)
+  const prevLog = logs.length >= 2 ? logs[logs.length - 2] : null
+  const prevDelta = prevLog ? current - prevLog.weight : null
+  const prevPctDelta = prevLog ? (prevLog.weight - current) / prevLog.weight : null
 
   return (
     <div className="rounded-2xl p-4 border border-slate-800 bg-slate-900">
@@ -71,6 +76,22 @@ function StatCard({ stats, rank }) {
 
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 text-center">
+        <div className="bg-slate-800 rounded-xl p-2">
+          <div className="text-xs text-slate-400">Goal Weight</div>
+          <div className="font-bold text-sm" style={{ color: p.color }}>{goal.toFixed(1)} lbs</div>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-2">
+          <div className="text-xs text-slate-400">Prev Day</div>
+          <div className={`font-bold text-sm ${prevDelta === null ? 'text-slate-500' : prevDelta > 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+            {prevDelta === null ? '—' : `${prevDelta > 0 ? '+' : ''}${prevDelta.toFixed(1)} lbs`}
+          </div>
+        </div>
+        <div className="bg-slate-800 rounded-xl p-2">
+          <div className="text-xs text-slate-400">Prev %</div>
+          <div className={`font-bold text-sm ${prevPctDelta === null ? 'text-slate-500' : prevPctDelta < 0 ? 'text-red-400' : 'text-emerald-400'}`}>
+            {prevPctDelta === null ? '—' : `${prevPctDelta > 0 ? '+' : ''}${(prevPctDelta * 100).toFixed(2)}%`}
+          </div>
+        </div>
         <div className="bg-slate-800 rounded-xl p-2">
           <div className="text-xs text-slate-400">Lost</div>
           <div className={`font-bold text-sm ${isGaining ? 'text-red-400' : 'text-white'}`}>
