@@ -34,10 +34,9 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
   const lineEnd   = { x: endDayX, y: intercept + slope * endDayX }
   const regressionLine = [lineStart, lineEnd]
 
-  // Pace-to-goal line: from last actual weigh-in to goal weight at June 1
-  const lastPt = pts[pts.length - 1]
+  // Pace-to-goal line: from first point in window to goal weight at June 1
   const paceToGoalLine = [
-    { x: lastPt.x, y: lastPt.y },
+    { x: pts[0].x, y: pts[0].y },
     { x: endDayX,  y: goal },
   ]
 
