@@ -2,7 +2,7 @@ import {
   ComposedChart, Scatter, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer, Legend
 } from 'recharts'
-import { formatDate, COMPETITION_END } from '../utils/calculations'
+import { formatDate, COMPETITION_END, COMPETITION_START } from '../utils/calculations'
 
 const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
@@ -21,29 +21,35 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
 
   const { pts, slope, intercept, originMs, endDayX, windowLogs } = regressionData
 
-  // Actual data points with labels
+  // Use Apr 1 as x=0 for the chart
+  const chartOriginMs = COMPETITION_START.getTime()
+  const totalDays = (COMPETITION_END.getTime() - chartOriginMs) / 86400000
+
+  // Actual data points with labels — x relative to Apr 1
   const scatterData = pts.map((p, i) => ({
-    x: p.x,
+    x: (new Date(windowLogs[i].date).getTime() - chartOriginMs) / 86400000,
     y: p.y,
     weight: p.y,
     label: formatDate(windowLogs[i].date),
   }))
 
-  // Regression line: from x=0 to end of competition
-  const lineStart = { x: 0,      y: intercept }
-  const lineEnd   = { x: endDayX, y: intercept + slope * endDayX }
-  const regressionLine = [lineStart, lineEnd]
+  // Regression line extended across full competition (x relative to Apr 1)
+  // regression was fit with originMs as x=0, so convert back
+  const regOffsetDays = (originMs - chartOriginMs) / 86400000
+  const regLineStart = { x: 0,          y: intercept + slope * (0 - regOffsetDays) }
+  const regLineEnd   = { x: totalDays,   y: intercept + slope * (totalDays - regOffsetDays) }
+  const regressionLine = [regLineStart, regLineEnd]
 
-  // Pace-to-goal line: from first point in window to goal weight at June 1
+  // Pace-to-goal line: from Apr 1 starting weight to goal at Jun 1
   const paceToGoalLine = [
-    { x: pts[0].x, y: pts[0].y },
-    { x: endDayX,  y: goal },
+    { x: 0,          y: startWeight },
+    { x: totalDays,  y: goal },
   ]
 
   // Y axis bounds
   const weights = pts.map(p => p.y)
-  const projEnd = intercept + slope * endDayX
-  const allY = [...weights, projEnd, goal]
+  const projEnd = intercept + slope * (totalDays - regOffsetDays)
+  const allY = [...weights, projEnd, goal, startWeight]
   const minY = Math.floor(Math.min(...allY)) - 2
   const maxY = Math.ceil(Math.max(...allY)) + 2
 
@@ -54,13 +60,13 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
         <XAxis
           dataKey="x"
           type="number"
-          domain={[0, endDayX]}
+          domain={[0, totalDays]}
           tickFormatter={x => {
-            const d = new Date(originMs + x * 86400000)
+            const d = new Date(chartOriginMs + x * 86400000)
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           }}
           tick={{ fill: '#64748b', fontSize: 10 }}
-          ticks={[0, Math.round(endDayX / 2), Math.round(endDayX)]}
+          ticks={[0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]}
         />
         <YAxis domain={[minY, maxY]} tick={{ fill: '#64748b', fontSize: 10 }} />
         <Tooltip content={<CustomTooltip />} />
