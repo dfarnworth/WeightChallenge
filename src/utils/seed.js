@@ -12,9 +12,23 @@ const INITIAL_DATA = [
   { participant: 'josh',  date: '2026-04-27', weight: 210 },
 ]
 
+// Backfill Josh Apr 1–Apr 26 at 210 so charts start from competition start
+const JOSH_BACKFILL = Array.from({ length: 26 }, (_, i) => {
+  const d = new Date('2026-04-01')
+  d.setDate(d.getDate() + i)
+  return { participant: 'josh', date: d.toISOString().split('T')[0], weight: 210 }
+})
+
 export async function seedInitialData() {
   for (const entry of INITIAL_DATA) {
     await postLog(entry.participant, entry.date, entry.weight)
   }
   return { added: INITIAL_DATA.length }
+}
+
+export async function backfillJosh() {
+  for (const entry of JOSH_BACKFILL) {
+    await postLog(entry.participant, entry.date, entry.weight)
+  }
+  return { added: JOSH_BACKFILL.length }
 }
