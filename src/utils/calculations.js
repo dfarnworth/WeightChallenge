@@ -6,7 +6,11 @@ export const PARTICIPANTS = [
   { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
   { id: 'dan',   name: 'Dan',   startWeight: 198.3, goalPercent: 0.08, color: '#a78bfa' },
   { id: 'paul',  name: 'Paul',  startWeight: 233.4, goalPercent: 0.08, color: '#34d399' },
+  { id: 'josh',  name: 'Josh',  startWeight: null,  goalPercent: null, color: '#f59e0b', observer: true },
 ]
+
+export const COMPETITORS = PARTICIPANTS.filter(p => !p.observer)
+export const OBSERVERS   = PARTICIPANTS.filter(p => p.observer)
 
 export function goalWeight(p) {
   return p.startWeight * (1 - p.goalPercent)
@@ -38,12 +42,14 @@ export function computeStats(participant, logs) {
     .sort((a, b) => a.date.localeCompare(b.date))
 
   const weighIns = myLogs.length
-  const current = weighIns > 0 ? myLogs[myLogs.length - 1].weight : participant.startWeight
-  const goal = goalWeight(participant)
-  const lost = participant.startWeight - current
-  const pctLost = lost / participant.startWeight
-  const remaining = current - goal
-  const pctToGoal = weighIns > 0 ? lost / (participant.startWeight - goal) : 0
+  // Observers use first log as baseline; competitors use hardcoded startWeight
+  const effectiveStart = participant.startWeight ?? (weighIns > 0 ? myLogs[0].weight : null)
+  const current = weighIns > 0 ? myLogs[myLogs.length - 1].weight : effectiveStart
+  const goal = participant.goalPercent != null && effectiveStart != null ? goalWeight({ ...participant, startWeight: effectiveStart }) : null
+  const lost = effectiveStart != null && current != null ? effectiveStart - current : 0
+  const pctLost = effectiveStart ? lost / effectiveStart : 0
+  const remaining = goal != null ? current - goal : null
+  const pctToGoal = goal != null && effectiveStart != null ? lost / (effectiveStart - goal) : 0
 
   // Pace: linear regression over rolling 21-day window, requires 7+ weigh-ins
   const ROLLING_DAYS = 21
@@ -103,6 +109,7 @@ export function computeStats(participant, logs) {
     participant,
     weighIns,
     current,
+    effectiveStart,
     goal,
     lost,
     pctLost,
@@ -128,5 +135,10 @@ export function formatProjectedFinish(date) {
 }
 
 export function rankParticipants(allStats) {
-  return [...allStats].sort((a, b) => b.pctLost - a.pctLost)
+  const competitors = allStats.filter(s => !s.participant.observer)
+  const observers   = allStats.filter(s =>  s.participant.observer)
+  return [
+    ...competitors.sort((a, b) => b.pctLost - a.pctLost),
+    ...observers,
+  ]
 }

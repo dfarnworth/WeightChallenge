@@ -1,4 +1,4 @@
-import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, PARTICIPANTS } from '../utils/calculations'
+import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, PARTICIPANTS, COMPETITORS } from '../utils/calculations'
 import WeightChart from './WeightChart'
 import PctLostChart from './PctLostChart'
 import LbsLostChart from './LbsLostChart'
@@ -54,20 +54,22 @@ function StatCard({ stats, rank }) {
         <span className="text-xl">{MEDALS[rank] ?? `#${rank + 1}`}</span>
       </div>
 
-      {/* Goal progress bar */}
-      <div className="mb-3">
-        <div className="flex justify-between text-xs text-slate-400 mb-1">
-          <span>Goal progress</span>
-          <span style={{ color: isGaining ? '#f87171' : p.color }}>
-            {isGaining ? '▲' : '▼'} {Math.abs(pctLost * 100).toFixed(2)}% lost
-          </span>
+      {/* Goal progress bar — competitors only */}
+      {!p.observer && (
+        <div className="mb-3">
+          <div className="flex justify-between text-xs text-slate-400 mb-1">
+            <span>Goal progress</span>
+            <span style={{ color: isGaining ? '#f87171' : p.color }}>
+              {isGaining ? '▲' : '▼'} {Math.abs(pctLost * 100).toFixed(2)}% lost
+            </span>
+          </div>
+          <ProgressBar pct={isGaining ? 0 : pctToGoal} color={p.color} target={linearTarget} />
+          <div className="flex justify-between text-xs text-slate-500 mt-1">
+            <span>{current?.toFixed(1)} lbs</span>
+            <span>Goal: {goal?.toFixed(1)} lbs</span>
+          </div>
         </div>
-        <ProgressBar pct={isGaining ? 0 : pctToGoal} color={p.color} target={linearTarget} />
-        <div className="flex justify-between text-xs text-slate-500 mt-1">
-          <span>{current.toFixed(1)} lbs</span>
-          <span>Goal: {goal.toFixed(1)} lbs</span>
-        </div>
-      </div>
+      )}
 
       {/* Stats grid */}
       <div className="grid grid-cols-3 gap-2 text-center">
@@ -78,8 +80,10 @@ function StatCard({ stats, rank }) {
           </div>
         </div>
         <div className="bg-slate-800 rounded-xl p-2">
-          <div className="text-xs text-slate-400">Remaining</div>
-          <div className="font-bold text-sm">{remaining > 0 ? remaining.toFixed(1) : '✓'} {remaining > 0 ? 'lbs' : ''}</div>
+          <div className="text-xs text-slate-400">{p.observer ? 'Current' : 'Remaining'}</div>
+          <div className="font-bold text-sm">
+            {p.observer ? `${current?.toFixed(1)} lbs` : remaining > 0 ? `${remaining.toFixed(1)} lbs` : '✓'}
+          </div>
         </div>
         <div className="bg-slate-800 rounded-xl p-2">
           <div className="text-xs text-slate-400">Weigh-ins</div>
@@ -89,14 +93,28 @@ function StatCard({ stats, rank }) {
           <div className="text-xs text-slate-400">Pace</div>
           <div className="font-bold text-sm">{pace !== null ? `${pace.toFixed(2)}/day` : '—'}</div>
         </div>
-        <div className="bg-slate-800 rounded-xl p-2">
-          <div className="text-xs text-slate-400">Goal by</div>
-          <div className="font-bold text-sm">{formatProjectedFinish(projectedFinish)}</div>
-        </div>
-        <div className="bg-slate-800 rounded-xl p-2">
-          <div className="text-xs text-slate-400">Jun 1 weight</div>
-          <div className="font-bold text-sm">{projectedEndWeight !== null ? `${projectedEndWeight.toFixed(1)} lbs` : '—'}</div>
-        </div>
+        {!p.observer && <>
+          <div className="bg-slate-800 rounded-xl p-2">
+            <div className="text-xs text-slate-400">Goal by</div>
+            <div className="font-bold text-sm">{formatProjectedFinish(projectedFinish)}</div>
+          </div>
+          <div className="bg-slate-800 rounded-xl p-2">
+            <div className="text-xs text-slate-400">Jun 1 weight</div>
+            <div className="font-bold text-sm">{projectedEndWeight !== null ? `${projectedEndWeight.toFixed(1)} lbs` : '—'}</div>
+          </div>
+        </>}
+        {p.observer && <>
+          <div className="bg-slate-800 rounded-xl p-2">
+            <div className="text-xs text-slate-400">Jun 1 weight</div>
+            <div className="font-bold text-sm">{projectedEndWeight !== null ? `${projectedEndWeight.toFixed(1)} lbs` : '—'}</div>
+          </div>
+          <div className="bg-slate-800 rounded-xl p-2">
+            <div className="text-xs text-slate-400">% Change</div>
+            <div className={`font-bold text-sm ${isGaining ? 'text-red-400' : 'text-emerald-400'}`}>
+              {isGaining ? '+' : ''}{(pctLost * 100).toFixed(2)}%
+            </div>
+          </div>
+        </>}
       </div>
     </div>
   )
@@ -159,14 +177,27 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                 const prevLog = s.logs.length >= 2 ? s.logs[s.logs.length - 2] : null
                 const prevDelta = prevLog ? s.current - prevLog.weight : null
                 const prevPct = prevLog ? (prevLog.weight - s.current) / prevLog.weight * 100 : null
+                const isFirstObserver = s.participant.observer && !ranked[i - 1]?.participant.observer
                 return (
+                  <>
+                  {isFirstObserver && (
+                    <tr key="divider">
+                      <td colSpan={7} className="px-4 py-1">
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 h-px bg-slate-800" />
+                          <span className="text-xs text-slate-600 uppercase tracking-wider">Guest</span>
+                          <div className="flex-1 h-px bg-slate-800" />
+                        </div>
+                      </td>
+                    </tr>
+                  )}
                   <tr key={s.participant.id} className="border-t border-slate-800">
                     <td className="px-3 py-3 flex items-center gap-1">
-                      <span>{MEDALS[i] ?? `#${i + 1}`}</span>
+                      <span>{s.participant.observer ? '👤' : (MEDALS[i] ?? `#${i + 1}`)}</span>
                       <span className="font-bold" style={{ color: s.participant.color }}>{s.participant.name[0]}</span>
                     </td>
-                    <td className="text-right px-2 py-3 text-slate-300">{s.current.toFixed(1)}</td>
-                    <td className="text-right px-2 py-3 text-slate-400">{s.goal.toFixed(1)}</td>
+                    <td className="text-right px-2 py-3 text-slate-300">{s.current?.toFixed(1)}</td>
+                    <td className="text-right px-2 py-3 text-slate-400">{s.goal?.toFixed(1) ?? '—'}</td>
                     <td className={`text-right px-2 py-3 font-medium ${isGaining ? 'text-red-400' : 'text-emerald-400'}`}>
                       {isGaining ? '+' : '-'}{Math.abs(s.lost).toFixed(1)}
                     </td>
@@ -180,6 +211,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                       {prevPct === null ? '—' : `${prevPct > 0 ? '+' : ''}${prevPct.toFixed(2)}%`}
                     </td>
                   </tr>
+                  </>
                 )
               })}
             </tbody>
@@ -194,7 +226,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Weight Over Time</h2>
-            <WeightChart logs={logs} participants={PARTICIPANTS} />
+            <WeightChart logs={logs} participants={COMPETITORS} />
           </div>
           <Verse reference="Ecclesiastes 4:9-10" text="Two are better than one... if either of them falls down, one can help the other up." />
         </>
@@ -205,7 +237,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Total Lbs Lost</h2>
-            <LbsLostChart logs={logs} participants={PARTICIPANTS} />
+            <LbsLostChart logs={logs} participants={COMPETITORS} />
           </div>
           <Verse reference="1 Thessalonians 5:11" text="Therefore encourage one another and build each other up." />
         </>
@@ -216,7 +248,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Cumulative % Lost</h2>
-            <PctLostChart logs={logs} participants={PARTICIPANTS} />
+            <PctLostChart logs={logs} participants={COMPETITORS} />
           </div>
           <Verse reference="Colossians 3:23" text="Whatever you do, work at it with all your heart, as working for the Lord." />
         </>
@@ -226,22 +258,32 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
       {hasData && (
         <div className="flex flex-col gap-4">
           <h2 className="font-semibold text-sm text-slate-300">Individual Stats</h2>
-          {ranked.map((stats, i) => (
-            <div key={stats.participant.id} className="flex flex-col gap-2">
-              <StatCard stats={stats} rank={i} />
-              {stats.regressionData && (
-                <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
-                  <p className="text-xs text-slate-500 mb-3">21-day regression trend</p>
-                  <RegressionChart
-                    regressionData={stats.regressionData}
-                    color={stats.participant.color}
-                    goal={stats.goal}
-                    startWeight={stats.participant.startWeight}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+          {ranked.map((stats, i) => {
+            const isFirstObserver = stats.participant.observer && !ranked[i - 1]?.participant.observer
+            return (
+              <div key={stats.participant.id} className="flex flex-col gap-2">
+                {isFirstObserver && (
+                  <div className="flex items-center gap-3 mt-2">
+                    <div className="flex-1 h-px bg-slate-800" />
+                    <span className="text-xs text-slate-600 uppercase tracking-wider">Guest</span>
+                    <div className="flex-1 h-px bg-slate-800" />
+                  </div>
+                )}
+                <StatCard stats={stats} rank={i} />
+                {stats.regressionData && (
+                  <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
+                    <p className="text-xs text-slate-500 mb-3">21-day regression trend</p>
+                    <RegressionChart
+                      regressionData={stats.regressionData}
+                      color={stats.participant.color}
+                      goal={stats.goal}
+                      startWeight={stats.effectiveStart}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
