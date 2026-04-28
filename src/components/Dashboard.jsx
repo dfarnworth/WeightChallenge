@@ -226,7 +226,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Weight Over Time</h2>
-            <WeightChart logs={logs} participants={COMPETITORS} />
+            <WeightChart logs={logs} participants={PARTICIPANTS} />
           </div>
           <Verse reference="Ecclesiastes 4:9-10" text="Two are better than one... if either of them falls down, one can help the other up." />
         </>
@@ -237,7 +237,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Total Lbs Lost</h2>
-            <LbsLostChart logs={logs} participants={COMPETITORS} />
+            <LbsLostChart logs={logs} participants={PARTICIPANTS} />
           </div>
           <Verse reference="1 Thessalonians 5:11" text="Therefore encourage one another and build each other up." />
         </>
@@ -248,7 +248,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
         <>
           <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4">
             <h2 className="font-semibold text-sm text-slate-300 mb-4">Cumulative % Lost</h2>
-            <PctLostChart logs={logs} participants={COMPETITORS} />
+            <PctLostChart logs={logs} participants={PARTICIPANTS} />
           </div>
           <Verse reference="Colossians 3:23" text="Whatever you do, work at it with all your heart, as working for the Lord." />
         </>
