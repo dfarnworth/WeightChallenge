@@ -278,6 +278,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                       color={stats.participant.color}
                       goal={stats.goal}
                       startWeight={stats.effectiveStart}
+                      observer={!!stats.participant.observer}
                     />
                   </div>
                 )}
