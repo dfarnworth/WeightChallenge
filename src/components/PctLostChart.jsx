@@ -7,12 +7,25 @@ function buildChartData(logs, participants) {
   const dateSet = new Set(logs.map(l => l.date))
   const dates = [...dateSet].sort()
 
+  // Resolve effective start weight per participant (observers use their first log)
+  const effectiveStart = {}
+  for (const p of participants) {
+    if (p.startWeight != null) {
+      effectiveStart[p.id] = p.startWeight
+    } else {
+      const first = logs.filter(l => l.participant === p.id).sort((a, b) => a.date.localeCompare(b.date))[0]
+      effectiveStart[p.id] = first ? first.weight : null
+    }
+  }
+
   return dates.map(date => {
     const point = { date, label: formatDate(date) }
     for (const p of participants) {
+      const start = effectiveStart[p.id]
+      if (start == null) continue
       const entry = logs.find(l => l.participant === p.id && l.date === date)
       if (entry) {
-        point[p.id] = parseFloat(((p.startWeight - entry.weight) / p.startWeight * 100).toFixed(2))
+        point[p.id] = parseFloat(((start - entry.weight) / start * 100).toFixed(2))
       }
     }
     return point
