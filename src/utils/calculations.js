@@ -3,10 +3,10 @@ export const COMPETITION_END = new Date('2026-06-01')
 export const COMPETITION_DAYS = 62
 
 export const PARTICIPANTS = [
-  { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
-  { id: 'dan',   name: 'Dan',   startWeight: 198.3, goalPercent: 0.08, color: '#a78bfa' },
-  { id: 'paul',  name: 'Paul',  startWeight: 233.4, goalPercent: 0.08, color: '#34d399' },
-  { id: 'josh',  name: 'Josh',  startWeight: null,  goalWeight: 185,  color: '#f59e0b', observer: true },
+  { id: 'javin', name: 'Javin', initials: 'JT', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
+  { id: 'dan',   name: 'Dan',   initials: 'DF', startWeight: 198.3, goalPercent: 0.08, color: '#a78bfa' },
+  { id: 'paul',  name: 'Paul',  initials: 'PW', startWeight: 233.4, goalPercent: 0.08, color: '#34d399' },
+  { id: 'josh',  name: 'Josh',  initials: 'JR', startWeight: null,  goalWeight: 185,  color: '#f59e0b', observer: true },
 ]
 
 export const COMPETITORS = PARTICIPANTS.filter(p => !p.observer)

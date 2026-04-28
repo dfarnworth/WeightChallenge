@@ -80,7 +80,7 @@ export default function App() {
               className="w-7 h-7 rounded-full flex items-center justify-center text-white text-xs font-bold"
               style={{ backgroundColor: activeParticipant?.color }}
             >
-              {activeParticipant?.name[0]}
+              {activeParticipant?.initials}
             </span>
             <span>{activeParticipant?.name}</span>
           </button>

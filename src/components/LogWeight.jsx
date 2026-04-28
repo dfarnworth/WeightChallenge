@@ -50,7 +50,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
             className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
             style={{ backgroundColor: participant.color + '33', color: participant.color }}
           >
-            {participant.name[0]}
+            {participant.initials}
           </span>
           <h2 className="font-semibold">Log Weight — {participant.name}</h2>
         </div>

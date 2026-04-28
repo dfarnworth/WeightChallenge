@@ -47,7 +47,7 @@ function StatCard({ stats, rank }) {
             className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold"
             style={{ backgroundColor: p.color + '33', color: p.color }}
           >
-            {p.name[0]}
+            {p.initials}
           </span>
           <span className="font-semibold">{p.name}</span>
         </div>
@@ -194,7 +194,7 @@ export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, 
                   <tr key={s.participant.id} className="border-t border-slate-800">
                     <td className="px-3 py-3 flex items-center gap-1">
                       <span>{s.participant.observer ? '👤' : (MEDALS[i] ?? `#${i + 1}`)}</span>
-                      <span className="font-bold" style={{ color: s.participant.color }}>{s.participant.name[0]}</span>
+                      <span className="font-bold" style={{ color: s.participant.color }}>{s.participant.initials}</span>
                     </td>
                     <td className="text-right px-2 py-3 text-slate-300">{s.current?.toFixed(1)}</td>
                     <td className="text-right px-2 py-3 text-slate-400">{s.goal?.toFixed(1) ?? '—'}</td>
