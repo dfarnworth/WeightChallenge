@@ -6,7 +6,7 @@ export const PARTICIPANTS = [
   { id: 'javin', name: 'Javin', startWeight: 214.2, goalPercent: 0.08, color: '#0ea5e9' },
   { id: 'dan',   name: 'Dan',   startWeight: 198.3, goalPercent: 0.08, color: '#a78bfa' },
   { id: 'paul',  name: 'Paul',  startWeight: 233.4, goalPercent: 0.08, color: '#34d399' },
-  { id: 'josh',  name: 'Josh',  startWeight: null,  goalPercent: null, color: '#f59e0b', observer: true },
+  { id: 'josh',  name: 'Josh',  startWeight: null,  goalWeight: 185,  color: '#f59e0b', observer: true },
 ]
 
 export const COMPETITORS = PARTICIPANTS.filter(p => !p.observer)
@@ -45,7 +45,9 @@ export function computeStats(participant, logs) {
   // Observers use first log as baseline; competitors use hardcoded startWeight
   const effectiveStart = participant.startWeight ?? (weighIns > 0 ? myLogs[0].weight : null)
   const current = weighIns > 0 ? myLogs[myLogs.length - 1].weight : effectiveStart
-  const goal = participant.goalPercent != null && effectiveStart != null ? goalWeight({ ...participant, startWeight: effectiveStart }) : null
+  const goal = participant.goalPercent != null && effectiveStart != null
+    ? goalWeight({ ...participant, startWeight: effectiveStart })
+    : participant.goalWeight ?? null
   const lost = effectiveStart != null && current != null ? effectiveStart - current : 0
   const pctLost = effectiveStart ? lost / effectiveStart : 0
   const remaining = goal != null ? current - goal : null

@@ -9,6 +9,7 @@ const INITIAL_DATA = [
   { participant: 'paul',  date: '2026-04-02', weight: 234.8 },
   { participant: 'javin', date: '2026-04-03', weight: 210.8 },
   { participant: 'dan',   date: '2026-04-03', weight: 196.2 },
+  { participant: 'josh',  date: '2026-04-27', weight: 210 },
 ]
 
 export async function seedInitialData() {
