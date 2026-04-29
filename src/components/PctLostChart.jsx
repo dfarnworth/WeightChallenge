@@ -73,7 +73,7 @@ export default function PctLostChart({ logs, participants }) {
             stroke={p.color}
             strokeWidth={2}
             dot={{ fill: p.color, r: 4 }}
-            connectNulls={false}
+            connectNulls
             activeDot={{ r: 6 }}
           />
         ))}
