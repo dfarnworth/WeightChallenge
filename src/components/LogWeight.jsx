@@ -74,7 +74,7 @@ function GainModal({ onClose }) {
             🐷
           </div>
           <span className="text-xs text-red-400 group-hover:text-red-300 transition-colors font-semibold">
-            I am a total loser. Tap to shamefully exit.
+            Tap to admit you're a total loser.
           </span>
         </button>
       </div>
