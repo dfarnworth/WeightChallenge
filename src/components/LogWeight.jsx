@@ -25,13 +25,11 @@ function GainModal({ onClose }) {
         <p className="text-slate-400 text-sm mb-6">The scale doesn't lie. Get it together! 🥗</p>
         <button
           onClick={onClose}
-          className="flex flex-col items-center gap-2 mx-auto group"
+          className="flex flex-col items-center gap-2 mx-auto group active:scale-95 transition-transform"
         >
-          <img
-            src="https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif"
-            alt="disappointed fat guy"
-            className="w-24 h-24 rounded-full object-cover border-2 border-red-500/40 group-hover:border-red-400 transition-colors"
-          />
+          <div className="w-28 h-28 rounded-full bg-red-950 border-2 border-red-500/40 group-hover:border-red-400 transition-colors flex items-center justify-center text-7xl">
+            🐷
+          </div>
           <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
             I know, I know... tap to close
           </span>
