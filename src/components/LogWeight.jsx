@@ -30,8 +30,8 @@ function GainModal({ onClose }) {
           <div className="w-28 h-28 rounded-full bg-red-950 border-2 border-red-500/40 group-hover:border-red-400 transition-colors flex items-center justify-center text-7xl">
             🐷
           </div>
-          <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
-            I know, I know... tap to close
+          <span className="text-xs text-red-400 group-hover:text-red-300 transition-colors font-semibold">
+            I am a total loser. Tap to shamefully exit.
           </span>
         </button>
       </div>
