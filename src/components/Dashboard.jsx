@@ -1,4 +1,4 @@
-import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, formatDate, PARTICIPANTS, COMPETITORS } from '../utils/calculations'
+import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, formatDate, todayStr, PARTICIPANTS, COMPETITORS } from '../utils/calculations'
 import WeightChart from './WeightChart'
 import PctLostChart from './PctLostChart'
 import LbsLostChart from './LbsLostChart'
@@ -120,12 +120,11 @@ function StatCard({ stats, rank }) {
   )
 }
 
-const PR_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
-
 export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser, onSeed, seeded }) {
   const day = dayOfCompetition()
   const hasData = logs.length > 0
-  const recentPRs = prs.filter(pr => Date.now() - pr.setAt < PR_TTL_MS)
+  // Show banner only if the PR was set today (Central Time) — disappears at midnight CT
+  const recentPRs = prs.filter(pr => pr.date === todayStr())
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
