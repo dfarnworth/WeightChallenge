@@ -105,8 +105,8 @@ function StatCard({ stats, rank }) {
         </>}
         {p.observer && <>
           <div className="bg-slate-800 rounded-xl p-2">
-            <div className="text-xs text-slate-400">Jun 1 weight</div>
-            <div className="font-bold text-sm">{projectedEndWeight !== null ? `${projectedEndWeight.toFixed(1)} lbs` : '—'}</div>
+            <div className="text-xs text-slate-400">Goal by</div>
+            <div className="font-bold text-sm">{formatProjectedFinish(projectedFinish)}</div>
           </div>
           <div className="bg-slate-800 rounded-xl p-2">
             <div className="text-xs text-slate-400">% Change</div>
@@ -301,7 +301,6 @@ export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser
                       goal={stats.goal}
                       startWeight={stats.effectiveStart}
                       observer={!!stats.participant.observer}
-                      projectedFinish={stats.projectedFinish}
                     />
                   </div>
                 )}
