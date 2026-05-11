@@ -39,7 +39,29 @@ function GainModal({ onClose }) {
   )
 }
 
-function MilestoneModal({ participant, onClose }) {
+const MILESTONE_CONFIG = {
+  10: {
+    header: '🎉🎊🎉',
+    title: '10 LBS DOWN!',
+    subtitle: 'is officially 10 pounds lighter. The boys are celebrating!',
+    button: "LET'S GOOO! 🔥",
+  },
+  15: {
+    header: '🔥💪🔥',
+    title: '15 LBS DOWN!',
+    subtitle: 'just dropped 15 pounds. That\'s a whole Thanksgiving turkey!',
+    button: "KEEP GRINDING! 💪",
+  },
+  20: {
+    header: '👑🏆👑',
+    title: '20 LBS DOWN!',
+    subtitle: 'lost 20 POUNDS. That is absolutely unreal. Legend status.',
+    button: "ABSOLUTE UNIT! 🏆",
+  },
+}
+
+function MilestoneModal({ participant, lbs, onClose }) {
+  const cfg = MILESTONE_CONFIG[lbs] ?? MILESTONE_CONFIG[10]
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
@@ -49,11 +71,11 @@ function MilestoneModal({ participant, onClose }) {
         className="bg-slate-900 border-2 border-amber-400/60 rounded-3xl p-6 mx-4 max-w-sm w-full text-center shadow-2xl"
         onClick={e => e.stopPropagation()}
       >
-        <div className="text-5xl mb-2">🎉🎊🎉</div>
-        <h2 className="text-3xl font-black text-amber-400 mb-1 tracking-tight">10 LBS DOWN!</h2>
+        <div className="text-5xl mb-2">{cfg.header}</div>
+        <h2 className="text-3xl font-black text-amber-400 mb-1 tracking-tight">{cfg.title}</h2>
         <p className="text-slate-300 text-sm mb-5">
           <span className="font-bold" style={{ color: participant.color }}>{participant.name}</span>
-          {' '}is officially 10 pounds lighter. The boys are celebrating! 💪
+          {' '}{cfg.subtitle} 💪
         </p>
 
         <div className="grid grid-cols-2 gap-2 mb-5">
@@ -71,7 +93,7 @@ function MilestoneModal({ participant, onClose }) {
           onClick={onClose}
           className="w-full py-3 rounded-xl font-black text-base bg-amber-400 hover:bg-amber-300 text-black transition-colors active:scale-95"
         >
-          LET'S GOOO! 🔥
+          {cfg.button}
         </button>
       </div>
     </div>
@@ -86,7 +108,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [editingDate, setEditingDate] = useState(null)
   const [editWeight, setEditWeight] = useState('')
   const [deletingDate, setDeletingDate] = useState(null)
-  const [showMilestone, setShowMilestone] = useState(false)
+  const [milestoneLbs, setMilestoneLbs] = useState(null) // 10 | 15 | 20
   const [showGain, setShowGain] = useState(false)
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
@@ -99,7 +121,9 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     const effectiveStart = stats?.effectiveStart
     const priorLost = stats?.lost ?? 0
     const newLost = effectiveStart != null ? effectiveStart - w : 0
-    const hit10lb = newLost >= 10 && priorLost < 10
+    // Check which milestone (if any) is crossed — show the highest one hit
+    const MILESTONES = [20, 15, 10]
+    const hitMilestone = MILESTONES.find(m => newLost >= m && priorLost < m) ?? null
     // Gained vs most recent log (only if there's a prior entry to compare against)
     const gainedWeight = stats?.current != null && stats.logs.length > 0 && w > stats.current
 
@@ -114,19 +138,20 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
     }
 
-    if (gainedWeight && !hit10lb) {
+    if (gainedWeight && !hitMilestone) {
       setShowGain(true)
     }
 
-    if (hit10lb) {
-      // Big cannon barrage for the 10 lb milestone
+    if (hitMilestone) {
       const colors = [participant.color, '#fbbf24', '#f472b6', '#34d399', '#ffffff']
+      // Scale up the barrage for bigger milestones
+      const count = hitMilestone === 20 ? 180 : hitMilestone === 15 ? 150 : 120
       setTimeout(() => {
-        confetti({ particleCount: 120, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
-        confetti({ particleCount: 120, angle: 120, spread: 70, origin: { x: 1,   y: 0.6 }, colors })
-        confetti({ particleCount: 80,  angle: 90,  spread: 90, origin: { x: 0.5, y: 0.3 }, colors })
+        confetti({ particleCount: count, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
+        confetti({ particleCount: count, angle: 120, spread: 70, origin: { x: 1,   y: 0.6 }, colors })
+        confetti({ particleCount: 80,   angle: 90,  spread: 90, origin: { x: 0.5, y: 0.3 }, colors })
       }, 200)
-      setShowMilestone(true)
+      setMilestoneLbs(hitMilestone)
     }
 
     setTimeout(() => setSaved(false), 2500)
@@ -152,8 +177,8 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
       {showGain && <GainModal onClose={() => setShowGain(false)} />}
-      {showMilestone && (
-        <MilestoneModal participant={participant} onClose={() => setShowMilestone(false)} />
+      {milestoneLbs && (
+        <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />
       )}
 
       {/* Log form */}
