@@ -3,6 +3,52 @@ import confetti from 'canvas-confetti'
 import { formatDate } from '../utils/calculations'
 import { deleteLog, postLog } from '../api'
 
+const DANCING_GIFS = [
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+  'https://media.giphy.com/media/26u4lOMA8JKSnL9Uk/giphy.gif',
+  'https://media.giphy.com/media/3ohzdIuqJoo8QdKlnW/giphy.gif',
+  'https://media.giphy.com/media/xT9IgG50Lg7rusXIaQ/giphy.gif',
+]
+
+function MilestoneModal({ participant, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border-2 border-amber-400/60 rounded-3xl p-6 mx-4 max-w-sm w-full text-center shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="text-5xl mb-2">🎉🎊🎉</div>
+        <h2 className="text-3xl font-black text-amber-400 mb-1 tracking-tight">10 LBS DOWN!</h2>
+        <p className="text-slate-300 text-sm mb-5">
+          <span className="font-bold" style={{ color: participant.color }}>{participant.name}</span>
+          {' '}is officially 10 pounds lighter. The boys are celebrating! 💪
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-5">
+          {DANCING_GIFS.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt="dancing celebration"
+              className="w-full h-28 object-cover rounded-xl"
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-xl font-black text-base bg-amber-400 hover:bg-amber-300 text-black transition-colors active:scale-95"
+        >
+          LET'S GOOO! 🔥
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function LogWeight({ participant, stats, onLog, onRefresh, todayStr }) {
   const [weight, setWeight] = useState('')
   const [date, setDate] = useState(todayStr)
@@ -11,22 +57,42 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [editingDate, setEditingDate] = useState(null)
   const [editWeight, setEditWeight] = useState('')
   const [deletingDate, setDeletingDate] = useState(null)
+  const [showMilestone, setShowMilestone] = useState(false)
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
 
   async function handleSubmit(e) {
     e.preventDefault()
     if (!weight || isNaN(parseFloat(weight))) return
+
+    const w = parseFloat(weight)
+    const effectiveStart = stats?.effectiveStart
+    const priorLost = stats?.lost ?? 0
+    const newLost = effectiveStart != null ? effectiveStart - w : 0
+    const hit10lb = newLost >= 10 && priorLost < 10
+
     setSaving(true)
-    const result = await onLog(participant.id, date, parseFloat(weight))
+    const result = await onLog(participant.id, date, w)
     setSaving(false)
     setSaved(true)
     setWeight('')
+
     if (result?.isPR) {
-      // Two cannon bursts from the sides for a big celebration
       confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
     }
+
+    if (hit10lb) {
+      // Big cannon barrage for the 10 lb milestone
+      const colors = [participant.color, '#fbbf24', '#f472b6', '#34d399', '#ffffff']
+      setTimeout(() => {
+        confetti({ particleCount: 120, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
+        confetti({ particleCount: 120, angle: 120, spread: 70, origin: { x: 1,   y: 0.6 }, colors })
+        confetti({ particleCount: 80,  angle: 90,  spread: 90, origin: { x: 0.5, y: 0.3 }, colors })
+      }, 200)
+      setShowMilestone(true)
+    }
+
     setTimeout(() => setSaved(false), 2500)
   }
 
@@ -49,6 +115,10 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
+      {showMilestone && (
+        <MilestoneModal participant={participant} onClose={() => setShowMilestone(false)} />
+      )}
+
       {/* Log form */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
         <div className="flex items-center gap-2 mb-4">
