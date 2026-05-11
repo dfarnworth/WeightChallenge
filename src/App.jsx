@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { fetchLogs, postLog } from './api'
+import { fetchLogs, postLog, fetchPRs } from './api'
 import { PARTICIPANTS, computeStats, rankParticipants, todayStr } from './utils/calculations'
 import { seedInitialData } from './utils/seed'
 import NameSelector from './components/NameSelector'
@@ -11,6 +11,7 @@ const POLL_INTERVAL = 30000 // refresh every 30s
 export default function App() {
   const [activeUser, setActiveUser] = useState(() => localStorage.getItem('wt_user') || null)
   const [logs, setLogs] = useState([])
+  const [prs, setPrs] = useState([])
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('dashboard')
   const [seeded, setSeeded] = useState(false)
@@ -22,8 +23,9 @@ export default function App() {
 
   const loadLogs = useCallback(async () => {
     try {
-      const data = await fetchLogs()
+      const [data, prData] = await Promise.all([fetchLogs(), fetchPRs()])
       setLogs(data)
+      setPrs(prData)
     } catch (e) {
       console.error(e)
     } finally {
@@ -52,8 +54,9 @@ export default function App() {
   }
 
   async function logWeight(participant, date, weight) {
-    await postLog(participant, date, parseFloat(weight))
+    const result = await postLog(participant, date, parseFloat(weight))
     await loadLogs()
+    return result // passes { ok, isPR } back to LogWeight for confetti
   }
 
   const allStats = PARTICIPANTS.map(p => computeStats(p, logs))
@@ -95,7 +98,7 @@ export default function App() {
         {loading ? (
           <div className="flex items-center justify-center h-64 text-slate-400">Loading…</div>
         ) : tab === 'dashboard' ? (
-          <Dashboard ranked={ranked} allStats={allStats} logs={logs} activeUser={activeUser} onSeed={handleSeed} seeded={seeded} />
+          <Dashboard ranked={ranked} allStats={allStats} logs={logs} prs={prs} activeUser={activeUser} onSeed={handleSeed} seeded={seeded} />
         ) : (
           <LogWeight
             participant={activeParticipant}

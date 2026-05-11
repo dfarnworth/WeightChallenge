@@ -23,6 +23,20 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing fields' })
   }
 
+  // Check for new all-time low BEFORE saving (exclude same-date entry to handle overwrites)
+  const allLogs = await redis.hgetall('weightlogs') || {}
+  const priorWeights = Object.entries(allLogs)
+    .filter(([k]) => k.startsWith(`${participant}:`) && k !== `${participant}:${date}`)
+    .map(([, v]) => parseFloat(v))
+  const isPR = priorWeights.length > 0 && weight < Math.min(...priorWeights)
+
+  // Save the log
   await redis.hset('weightlogs', { [`${participant}:${date}`]: weight })
-  res.json({ ok: true })
+
+  // Persist PR record so the dashboard banner survives page reloads / other users
+  if (isPR) {
+    await redis.hset('prs', { [participant]: JSON.stringify({ weight, date, setAt: Date.now() }) })
+  }
+
+  res.json({ ok: true, isPR })
 }

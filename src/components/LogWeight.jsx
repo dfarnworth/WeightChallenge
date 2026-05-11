@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import confetti from 'canvas-confetti'
 import { formatDate } from '../utils/calculations'
 import { deleteLog, postLog } from '../api'
 
@@ -17,10 +18,15 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     e.preventDefault()
     if (!weight || isNaN(parseFloat(weight))) return
     setSaving(true)
-    await onLog(participant.id, date, parseFloat(weight))
+    const result = await onLog(participant.id, date, parseFloat(weight))
     setSaving(false)
     setSaved(true)
     setWeight('')
+    if (result?.isPR) {
+      // Two cannon bursts from the sides for a big celebration
+      confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
+      confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
+    }
     setTimeout(() => setSaved(false), 2500)
   }
 

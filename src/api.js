@@ -13,6 +13,12 @@ export async function postLog(participant, date, weight) {
     body: JSON.stringify({ participant, date, weight }),
   })
   if (!res.ok) throw new Error('Failed to save log')
+  return res.json() // { ok, isPR }
+}
+
+export async function fetchPRs() {
+  const res = await fetch(`${BASE}/api/prs`)
+  if (!res.ok) throw new Error('Failed to fetch PRs')
   return res.json()
 }
 

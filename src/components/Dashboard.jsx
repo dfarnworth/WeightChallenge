@@ -1,4 +1,4 @@
-import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, PARTICIPANTS, COMPETITORS } from '../utils/calculations'
+import { dayOfCompetition, COMPETITION_DAYS, formatProjectedFinish, formatDate, PARTICIPANTS, COMPETITORS } from '../utils/calculations'
 import WeightChart from './WeightChart'
 import PctLostChart from './PctLostChart'
 import LbsLostChart from './LbsLostChart'
@@ -120,12 +120,35 @@ function StatCard({ stats, rank }) {
   )
 }
 
-export default function Dashboard({ ranked, allStats, logs, activeUser, onSeed, seeded }) {
+const PR_TTL_MS = 24 * 60 * 60 * 1000 // 24 hours
+
+export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser, onSeed, seeded }) {
   const day = dayOfCompetition()
   const hasData = logs.length > 0
+  const recentPRs = prs.filter(pr => Date.now() - pr.setAt < PR_TTL_MS)
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
+      {/* PR celebration banners */}
+      {recentPRs.map(pr => {
+        const p = PARTICIPANTS.find(p => p.id === pr.participant)
+        if (!p) return null
+        return (
+          <div key={pr.participant} className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-center gap-3">
+            <span className="text-3xl">🏆</span>
+            <div>
+              <p className="text-sm font-bold text-amber-300">New Personal Record!</p>
+              <p className="text-xs text-slate-300 mt-0.5">
+                <span className="font-semibold" style={{ color: p.color }}>{p.name}</span>
+                {' '}hit a new low —{' '}
+                <span className="font-bold text-white">{Number(pr.weight).toFixed(1)} lbs</span>
+                {' '}on {formatDate(pr.date)}
+              </p>
+            </div>
+          </div>
+        )
+      })}
+
       {/* Competition progress */}
       <div>
         <div className="flex justify-between text-xs text-slate-400 mb-1">
