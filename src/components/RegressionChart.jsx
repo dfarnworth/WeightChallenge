@@ -29,12 +29,12 @@ const CustomTooltip = ({ active, payload, startWeight, goal, chartOriginMs, tota
 export default function RegressionChart({ regressionData, color, goal, startWeight, observer }) {
   if (!regressionData) return null
 
-  const { pts, slope, intercept, originMs, windowLogs } = regressionData
+  const { pts, slope, intercept, originMs, windowLogs, allLogs } = regressionData
 
   // Chart bounds: competition participants use Apr 1→Jun 1; observers use first log→ +3 months
   let chartOriginMs, totalDays
   if (observer) {
-    const firstLogMs = new Date(windowLogs[0].date).getTime()
+    const firstLogMs = new Date((allLogs ?? windowLogs)[0].date).getTime()
     const threeMonthsOut = new Date()
     threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3)
     chartOriginMs = firstLogMs
@@ -44,13 +44,16 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
     totalDays = (COMPETITION_END.getTime() - chartOriginMs) / 86400000
   }
 
-  // Actual data points — x relative to chartOrigin
-  const scatterData = pts.map((p, i) => ({
-    x: (new Date(windowLogs[i].date).getTime() - chartOriginMs) / 86400000,
-    y: p.y,
-    weight: p.y,
-    label: formatDate(windowLogs[i].date),
-  }))
+  // All data points split into window vs older for different styling
+  const windowDateSet = new Set(windowLogs.map(l => l.date))
+  const toPoint = l => ({
+    x: (new Date(l.date).getTime() - chartOriginMs) / 86400000,
+    y: l.weight,
+    weight: l.weight,
+    label: formatDate(l.date),
+  })
+  const historicalScatter = (allLogs ?? windowLogs).filter(l => !windowDateSet.has(l.date)).map(toPoint)
+  const windowScatter     = windowLogs.map(toPoint)
 
   // Regression line across full chart range
   const regOffsetDays = (originMs - chartOriginMs) / 86400000
@@ -65,10 +68,10 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
     { x: totalDays, y: goal },
   ] : null
 
-  // Y axis bounds
-  const weights = pts.map(p => p.y)
+  // Y axis bounds — use ALL logs so older points don't clip
+  const allWeights = (allLogs ?? windowLogs).map(l => l.weight)
   const projEnd = intercept + slope * (totalDays - regOffsetDays)
-  const allY = [...weights, projEnd, ...(goal != null ? [goal] : []), startWeight].filter(Boolean)
+  const allY = [...allWeights, projEnd, ...(goal != null ? [goal] : []), startWeight].filter(Boolean)
   const minY = Math.floor(Math.min(...allY)) - 2
   const maxY = Math.ceil(Math.max(...allY)) + 2
 
@@ -132,9 +135,20 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
           legendType="line"
         />
 
-        {/* Actual weigh-ins */}
+        {/* Older weigh-ins (outside 21-day window) — dimmed */}
+        {historicalScatter.length > 0 && (
+          <Scatter
+            data={historicalScatter}
+            dataKey="y"
+            fill={color}
+            fillOpacity={0.3}
+            r={3}
+          />
+        )}
+
+        {/* 21-day window weigh-ins — full color, driving the regression */}
         <Scatter
-          data={scatterData}
+          data={windowScatter}
           dataKey="y"
           fill={color}
           r={4}

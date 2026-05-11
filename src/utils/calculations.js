@@ -104,7 +104,7 @@ export function computeStats(participant, logs) {
     // Pass regression details for chart
     const originMs = new Date(windowLogs[0].date).getTime()
     const endDayX = (COMPETITION_END.getTime() - originMs) / 86400000
-    regressionData = { pts, slope, intercept, originMs, endDayX, windowLogs }
+    regressionData = { pts, slope, intercept, originMs, endDayX, windowLogs, allLogs: myLogs }
   }
 
   return {
