@@ -6,21 +6,41 @@ import { formatDate, COMPETITION_END, COMPETITION_START } from '../utils/calcula
 
 const CustomTooltip = ({ active, payload, startWeight, goal, chartOriginMs, totalDays }) => {
   if (!active || !payload?.length) return null
-  const d = payload[0]?.payload
-  if (!d || d.weight == null) return null
-  const paceWeight = startWeight + (goal - startWeight) * (d.x / totalDays)
-  const diff = d.weight - paceWeight
+
+  // x comes from whichever series is hovered (pace line or scatter dot)
+  const firstPayload = payload[0]?.payload
+  if (firstPayload == null) return null
+  const x = firstPayload.x
+  if (x == null) return null
+
+  // Build date label from x if not already on the payload
+  const label = firstPayload.label ??
+    new Date(chartOriginMs + x * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+  // Actual weigh-in data comes from the scatter series (has a weight field)
+  const actual = payload.find(p => p.payload?.weight != null)?.payload?.weight ?? null
+
+  // Linear pace-to-goal target at this x
+  const paceWeight = goal != null ? startWeight + (goal - startWeight) * (x / totalDays) : null
+
+  if (actual == null && paceWeight == null) return null
+
+  const diff = actual != null && paceWeight != null ? actual - paceWeight : null
+  const isFuture = actual == null
+
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs shadow-xl">
-      {d.label && <p className="text-slate-400 mb-1">{d.label}</p>}
-      <p className="font-semibold text-white">Actual: {d.weight.toFixed(1)} lbs</p>
-      {goal != null && (
-        <>
-          <p className="text-slate-400">Target: {paceWeight.toFixed(1)} lbs</p>
-          <p className={`font-semibold mt-0.5 ${diff <= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-            {diff <= 0 ? '▼' : '▲'} {Math.abs(diff).toFixed(1)} lbs {diff <= 0 ? 'ahead' : 'behind'}
-          </p>
-        </>
+      <p className="text-slate-400 mb-1">{label}{isFuture ? ' · projected' : ''}</p>
+      {actual != null && <p className="font-semibold text-white">Actual: {actual.toFixed(1)} lbs</p>}
+      {paceWeight != null && (
+        <p className={isFuture ? 'font-semibold text-white' : 'text-slate-400'}>
+          Target: {paceWeight.toFixed(1)} lbs
+        </p>
+      )}
+      {diff != null && (
+        <p className={`font-semibold mt-0.5 ${diff <= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {diff <= 0 ? '▼' : '▲'} {Math.abs(diff).toFixed(1)} lbs {diff <= 0 ? 'ahead' : 'behind'}
+        </p>
       )}
     </div>
   )
@@ -44,7 +64,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
     totalDays = (COMPETITION_END.getTime() - chartOriginMs) / 86400000
   }
 
-  // All data points split into window vs older for different styling
+  // Scatter data — older points (dimmed) vs 21-day window points (full color)
   const windowDateSet = new Set(windowLogs.map(l => l.date))
   const toPoint = l => ({
     x: (new Date(l.date).getTime() - chartOriginMs) / 86400000,
@@ -55,20 +75,25 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
   const historicalScatter = (allLogs ?? windowLogs).filter(l => !windowDateSet.has(l.date)).map(toPoint)
   const windowScatter     = windowLogs.map(toPoint)
 
-  // Regression line across full chart range
+  // Regression line — 2 points is enough (no tooltip needed on it)
   const regOffsetDays = (originMs - chartOriginMs) / 86400000
   const regressionLine = [
     { x: 0,         y: intercept + slope * (0 - regOffsetDays) },
     { x: totalDays, y: intercept + slope * (totalDays - regOffsetDays) },
   ]
 
-  // Pace-to-goal line: from chart start (startWeight) to goal at chart end
-  const paceToGoalLine = goal != null ? [
-    { x: 0,         y: startWeight },
-    { x: totalDays, y: goal },
-  ] : null
+  // Pace-to-goal line — one point per day so every date is hoverable
+  const days = Math.ceil(totalDays)
+  const paceToGoalLine = goal != null
+    ? Array.from({ length: days + 1 }, (_, i) => ({
+        x: i,
+        y: parseFloat((startWeight + (goal - startWeight) * (i / totalDays)).toFixed(1)),
+        label: new Date(chartOriginMs + i * 86400000)
+          .toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      }))
+    : null
 
-  // Y axis bounds — use ALL logs so older points don't clip
+  // Y axis bounds — cover all logs + projections
   const allWeights = (allLogs ?? windowLogs).map(l => l.weight)
   const projEnd = intercept + slope * (totalDays - regOffsetDays)
   const allY = [...allWeights, projEnd, ...(goal != null ? [goal] : []), startWeight].filter(Boolean)
@@ -76,9 +101,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
   const maxY = Math.ceil(Math.max(...allY)) + 2
 
   // X axis ticks
-  const ticks = observer
-    ? [0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]
-    : [0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]
+  const ticks = [0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]
 
   return (
     <ResponsiveContainer width="100%" height={180}>
@@ -111,7 +134,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
             label={{ value: 'Goal', fill: color, fontSize: 10, position: 'insideTopRight' }} />
         )}
 
-        {/* Pace-to-goal line */}
+        {/* Pace-to-goal line — daily points make every date hoverable */}
         {paceToGoalLine && (
           <Line
             data={paceToGoalLine}
@@ -120,6 +143,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
             strokeWidth={1.5}
             strokeDasharray="5 4"
             dot={false}
+            activeDot={{ r: 4, fill: '#ffffff', strokeWidth: 0 }}
             legendType="none"
           />
         )}
@@ -131,6 +155,7 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
           stroke={color}
           strokeWidth={2}
           dot={false}
+          activeDot={false}
           strokeDasharray="none"
           legendType="line"
         />
