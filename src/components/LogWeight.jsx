@@ -10,6 +10,49 @@ const DANCING_GIFS = [
   'https://media.giphy.com/media/xT9IgG50Lg7rusXIaQ/giphy.gif',
 ]
 
+function GoalModal({ participant, onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border-2 border-yellow-400/80 rounded-3xl p-6 mx-4 max-w-sm w-full text-center shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="text-8xl mb-3 animate-bounce">🥇</div>
+        <h2 className="text-3xl font-black tracking-tight mb-1" style={{ color: participant.color }}>
+          GOAL ACHIEVED!
+        </h2>
+        <p className="text-yellow-300 font-bold text-lg mb-2">Congratulations!</p>
+        <p className="text-slate-300 text-sm mb-6">
+          <span className="font-bold" style={{ color: participant.color }}>{participant.name}</span>
+          {' '}hit their goal weight. All that hard work paid off — this is what it feels like to WIN. 🏆
+        </p>
+
+        <div className="grid grid-cols-2 gap-2 mb-6">
+          {DANCING_GIFS.map((src, i) => (
+            <img
+              key={i}
+              src={src}
+              alt="celebration"
+              className="w-full h-28 object-cover rounded-xl"
+            />
+          ))}
+        </div>
+
+        <button
+          onClick={onClose}
+          className="w-full py-4 rounded-xl font-black text-lg transition-colors active:scale-95"
+          style={{ backgroundColor: participant.color, color: '#000' }}
+        >
+          I AM A CHAMPION 🥇
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function GainModal({ onClose }) {
   return (
     <div
@@ -109,6 +152,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [editWeight, setEditWeight] = useState('')
   const [deletingDate, setDeletingDate] = useState(null)
   const [milestoneLbs, setMilestoneLbs] = useState(null) // 10 | 15 | 20
+  const [showGoal, setShowGoal] = useState(false)
   const [showGain, setShowGain] = useState(false)
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
@@ -124,6 +168,9 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     // Check which milestone (if any) is crossed — show the highest one hit
     const MILESTONES = [20, 15, 10]
     const hitMilestone = MILESTONES.find(m => newLost >= m && priorLost < m) ?? null
+    // Goal achieved — first time weight drops to or below goal
+    const hitGoal = stats?.goal != null && stats?.current != null
+      && w <= stats.goal && stats.current > stats.goal
     // Gained vs most recent log (only if there's a prior entry to compare against)
     const gainedWeight = stats?.current != null && stats.logs.length > 0 && w > stats.current
 
@@ -138,11 +185,23 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
     }
 
-    if (gainedWeight && !hitMilestone) {
+    if (hitGoal) {
+      // Maximum celebration — gold rain from all directions
+      const gold = ['#fbbf24', '#f59e0b', '#fcd34d', '#ffffff', participant.color]
+      setTimeout(() => {
+        confetti({ particleCount: 200, angle: 60,  spread: 80, origin: { x: 0,   y: 0.5 }, colors: gold })
+        confetti({ particleCount: 200, angle: 120, spread: 80, origin: { x: 1,   y: 0.5 }, colors: gold })
+        confetti({ particleCount: 150, angle: 90,  spread: 100, origin: { x: 0.5, y: 0 }, colors: gold })
+        confetti({ particleCount: 100, angle: 90,  spread: 120, origin: { x: 0.5, y: 0.3 }, colors: gold })
+      }, 100)
+      setShowGoal(true)
+    }
+
+    if (gainedWeight && !hitMilestone && !hitGoal) {
       setShowGain(true)
     }
 
-    if (hitMilestone) {
+    if (hitMilestone && !hitGoal) {
       const colors = [participant.color, '#fbbf24', '#f472b6', '#34d399', '#ffffff']
       // Scale up the barrage for bigger milestones
       const count = hitMilestone === 20 ? 180 : hitMilestone === 15 ? 150 : 120
@@ -176,6 +235,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
+      {showGoal && <GoalModal participant={participant} onClose={() => setShowGoal(false)} />}
       {showGain && <GainModal onClose={() => setShowGain(false)} />}
       {milestoneLbs && (
         <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />
