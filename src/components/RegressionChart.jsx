@@ -46,7 +46,7 @@ const CustomTooltip = ({ active, payload, startWeight, goal, chartOriginMs, tota
   )
 }
 
-export default function RegressionChart({ regressionData, color, goal, startWeight, observer }) {
+export default function RegressionChart({ regressionData, color, goal, startWeight, observer, projectedFinish }) {
   if (!regressionData) return null
 
   const { pts, slope, intercept, originMs, windowLogs, allLogs } = regressionData
@@ -100,6 +100,15 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
   const minY = Math.floor(Math.min(...allY)) - 2
   const maxY = Math.ceil(Math.max(...allY)) + 2
 
+  // Projected goal date — x position on chart (null if outside range or not available)
+  const projectedFinishX = projectedFinish
+    ? (projectedFinish.getTime() - chartOriginMs) / 86400000
+    : null
+  const showProjectedLine = projectedFinishX != null && projectedFinishX > 0 && projectedFinishX <= totalDays
+  const projectedLabel = projectedFinish
+    ? projectedFinish.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null
+
   // X axis ticks
   const ticks = [0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]
 
@@ -128,10 +137,26 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
           />
         } />
 
-        {/* Goal weight reference line */}
+        {/* Horizontal goal weight line */}
         {goal != null && (
           <ReferenceLine y={goal} stroke={color} strokeDasharray="4 4" strokeOpacity={0.5}
             label={{ value: 'Goal', fill: color, fontSize: 10, position: 'insideTopRight' }} />
+        )}
+
+        {/* Vertical projected goal date — where regression trend hits goal weight */}
+        {showProjectedLine && (
+          <ReferenceLine
+            x={projectedFinishX}
+            stroke={color}
+            strokeDasharray="3 3"
+            strokeOpacity={0.7}
+            label={{
+              value: `🎯 ${projectedLabel}`,
+              fill: color,
+              fontSize: 9,
+              position: 'insideTopLeft',
+            }}
+          />
         )}
 
         {/* Pace-to-goal line — daily points make every date hoverable */}

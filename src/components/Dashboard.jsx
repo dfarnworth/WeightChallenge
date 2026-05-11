@@ -301,6 +301,7 @@ export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser
                       goal={stats.goal}
                       startWeight={stats.effectiveStart}
                       observer={!!stats.participant.observer}
+                      projectedFinish={stats.projectedFinish}
                     />
                   </div>
                 )}
