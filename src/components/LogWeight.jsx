@@ -10,6 +10,37 @@ const DANCING_GIFS = [
   'https://media.giphy.com/media/xT9IgG50Lg7rusXIaQ/giphy.gif',
 ]
 
+function GainModal({ onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border-2 border-red-500/60 rounded-3xl p-6 mx-4 max-w-xs w-full text-center shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="text-6xl mb-3">😡</div>
+        <h2 className="text-2xl font-black text-red-400 mb-2 tracking-tight">Do better, fatty!</h2>
+        <p className="text-slate-400 text-sm mb-6">The scale doesn't lie. Get it together! 🥗</p>
+        <button
+          onClick={onClose}
+          className="flex flex-col items-center gap-2 mx-auto group"
+        >
+          <img
+            src="https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif"
+            alt="disappointed fat guy"
+            className="w-24 h-24 rounded-full object-cover border-2 border-red-500/40 group-hover:border-red-400 transition-colors"
+          />
+          <span className="text-xs text-slate-500 group-hover:text-slate-300 transition-colors">
+            I know, I know... tap to close
+          </span>
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function MilestoneModal({ participant, onClose }) {
   return (
     <div
@@ -58,6 +89,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [editWeight, setEditWeight] = useState('')
   const [deletingDate, setDeletingDate] = useState(null)
   const [showMilestone, setShowMilestone] = useState(false)
+  const [showGain, setShowGain] = useState(false)
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
 
@@ -70,6 +102,8 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     const priorLost = stats?.lost ?? 0
     const newLost = effectiveStart != null ? effectiveStart - w : 0
     const hit10lb = newLost >= 10 && priorLost < 10
+    // Gained vs most recent log (only if there's a prior entry to compare against)
+    const gainedWeight = stats?.current != null && stats.logs.length > 0 && w > stats.current
 
     setSaving(true)
     const result = await onLog(participant.id, date, w)
@@ -80,6 +114,10 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     if (result?.isPR) {
       confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
+    }
+
+    if (gainedWeight && !hit10lb) {
+      setShowGain(true)
     }
 
     if (hit10lb) {
@@ -115,6 +153,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
+      {showGain && <GainModal onClose={() => setShowGain(false)} />}
       {showMilestone && (
         <MilestoneModal participant={participant} onClose={() => setShowMilestone(false)} />
       )}
