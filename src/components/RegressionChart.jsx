@@ -1,40 +1,33 @@
 import {
-  ComposedChart, Scatter, Line, XAxis, YAxis, CartesianGrid,
+  ComposedChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ReferenceLine, ResponsiveContainer
 } from 'recharts'
 import { formatDate, COMPETITION_END, COMPETITION_START } from '../utils/calculations'
 
-const CustomTooltip = ({ active, payload, startWeight, goal, chartOriginMs, totalDays }) => {
+const CustomTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null
 
-  // x comes from whichever series is hovered (pace line or scatter dot)
-  const firstPayload = payload[0]?.payload
-  if (firstPayload == null) return null
-  const x = firstPayload.x
-  if (x == null) return null
+  const point = payload[0]?.payload
+  if (!point) return null
 
-  // Build date label from x if not already on the payload
-  const label = firstPayload.label ??
-    new Date(chartOriginMs + x * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  const actual = point.actual ?? null
+  const pace   = point.pace  ?? null
+  if (actual == null && pace == null) return null
 
-  // Actual weigh-in data comes from the scatter series (has a weight field)
-  const actual = payload.find(p => p.payload?.weight != null)?.payload?.weight ?? null
-
-  // Linear pace-to-goal target at this x
-  const paceWeight = goal != null ? startWeight + (goal - startWeight) * (x / totalDays) : null
-
-  if (actual == null && paceWeight == null) return null
-
-  const diff = actual != null && paceWeight != null ? actual - paceWeight : null
+  const diff = actual != null && pace != null ? actual - pace : null
   const isFuture = actual == null
 
   return (
     <div className="bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs shadow-xl">
-      <p className="text-slate-400 mb-1">{label}{isFuture ? ' · projected' : ''}</p>
-      {actual != null && <p className="font-semibold text-white">Actual: {actual.toFixed(1)} lbs</p>}
-      {paceWeight != null && (
+      <p className="text-slate-400 mb-1">
+        {point.label}{isFuture ? ' · projected' : ''}
+      </p>
+      {actual != null && (
+        <p className="font-semibold text-white">Actual: {actual.toFixed(1)} lbs</p>
+      )}
+      {pace != null && (
         <p className={isFuture ? 'font-semibold text-white' : 'text-slate-400'}>
-          Target: {paceWeight.toFixed(1)} lbs
+          Target: {pace.toFixed(1)} lbs
         </p>
       )}
       {diff != null && (
@@ -49,12 +42,13 @@ const CustomTooltip = ({ active, payload, startWeight, goal, chartOriginMs, tota
 export default function RegressionChart({ regressionData, color, goal, startWeight, observer }) {
   if (!regressionData) return null
 
-  const { pts, slope, intercept, originMs, windowLogs, allLogs } = regressionData
+  const { slope, intercept, originMs, windowLogs, allLogs } = regressionData
+  const sourceLogs = allLogs ?? windowLogs
 
-  // Chart bounds: competition participants use Apr 1→Jun 1; observers use first log→ +3 months
+  // Chart bounds
   let chartOriginMs, totalDays
   if (observer) {
-    const firstLogMs = new Date((allLogs ?? windowLogs)[0].date).getTime()
+    const firstLogMs = new Date(sourceLogs[0].date).getTime()
     const threeMonthsOut = new Date()
     threeMonthsOut.setMonth(threeMonthsOut.getMonth() + 3)
     chartOriginMs = firstLogMs
@@ -64,69 +58,74 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
     totalDays = (COMPETITION_END.getTime() - chartOriginMs) / 86400000
   }
 
-  // Scatter data — older points (dimmed) vs 21-day window points (full color)
-  const windowDateSet = new Set(windowLogs.map(l => l.date))
-  const toPoint = l => ({
-    x: (new Date(l.date).getTime() - chartOriginMs) / 86400000,
-    y: l.weight,
-    weight: l.weight,
-    label: formatDate(l.date),
-  })
-  const historicalScatter = (allLogs ?? windowLogs).filter(l => !windowDateSet.has(l.date)).map(toPoint)
-  const windowScatter     = windowLogs.map(toPoint)
-
-  // Regression line — 2 points is enough (no tooltip needed on it)
   const regOffsetDays = (originMs - chartOriginMs) / 86400000
-  const regressionLine = [
-    { x: 0,         y: intercept + slope * (0 - regOffsetDays) },
-    { x: totalDays, y: intercept + slope * (totalDays - regOffsetDays) },
-  ]
+  const windowDateSet = new Set(windowLogs.map(l => l.date))
 
-  // Pace-to-goal line — one point per day so every date is hoverable
+  // Build a lookup of actual weights by date string
+  const actualByDate = {}
+  for (const l of sourceLogs) actualByDate[l.date] = l.weight
+
+  // Unified day-by-day dataset — one row per day across the full chart range
   const days = Math.ceil(totalDays)
-  const paceToGoalLine = goal != null
-    ? Array.from({ length: days + 1 }, (_, i) => ({
-        x: i,
-        y: parseFloat((startWeight + (goal - startWeight) * (i / totalDays)).toFixed(1)),
-        label: new Date(chartOriginMs + i * 86400000)
-          .toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      }))
-    : null
+  const data = Array.from({ length: days + 1 }, (_, i) => {
+    const dateMs  = chartOriginMs + i * 86400000
+    const dateStr = new Date(dateMs).toISOString().split('T')[0]
+    const actualW = actualByDate[dateStr] ?? null
+    return {
+      x:        i,
+      label:    new Date(dateMs).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      actual:   actualW,
+      pace:     goal != null
+                  ? parseFloat((startWeight + (goal - startWeight) * (i / totalDays)).toFixed(1))
+                  : null,
+      regression: parseFloat((intercept + slope * (i - regOffsetDays)).toFixed(1)),
+      inWindow: actualW != null && windowDateSet.has(dateStr),
+    }
+  })
 
-  // Y axis bounds — cover all logs + projections
-  const allWeights = (allLogs ?? windowLogs).map(l => l.weight)
-  const projEnd = intercept + slope * (totalDays - regOffsetDays)
-  const allY = [...allWeights, projEnd, ...(goal != null ? [goal] : []), startWeight].filter(Boolean)
+  // Y axis bounds — all actual weights + regression endpoints + goal
+  const allWeights  = sourceLogs.map(l => l.weight)
+  const regStart    = intercept + slope * (0 - regOffsetDays)
+  const regEnd      = intercept + slope * (days - regOffsetDays)
+  const allY = [...allWeights, regStart, regEnd, ...(goal != null ? [goal] : []), startWeight].filter(Boolean)
   const minY = Math.floor(Math.min(...allY)) - 2
   const maxY = Math.ceil(Math.max(...allY)) + 2
 
   // X axis ticks
-  const ticks = [0, Math.round(totalDays / 3), Math.round(totalDays * 2 / 3), Math.round(totalDays)]
+  const ticks = [0, Math.round(days / 3), Math.round(days * 2 / 3), days]
+
+  // Custom dot for actual weigh-ins: bright if in 21-day window, dim if older
+  const ActualDot = (props) => {
+    const { cx, cy, payload } = props
+    if (payload.actual == null) return null
+    return (
+      <circle
+        cx={cx} cy={cy}
+        r={payload.inWindow ? 4 : 3}
+        fill={color}
+        fillOpacity={payload.inWindow ? 1 : 0.3}
+      />
+    )
+  }
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <ComposedChart margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
         <XAxis
           dataKey="x"
           type="number"
-          domain={[0, totalDays]}
+          scale="linear"
+          domain={[0, days]}
+          ticks={ticks}
           tickFormatter={x => {
             const d = new Date(chartOriginMs + x * 86400000)
             return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
           }}
           tick={{ fill: '#64748b', fontSize: 10 }}
-          ticks={ticks}
         />
         <YAxis domain={[minY, maxY]} tick={{ fill: '#64748b', fontSize: 10 }} />
-        <Tooltip content={
-          <CustomTooltip
-            startWeight={startWeight}
-            goal={goal}
-            chartOriginMs={chartOriginMs}
-            totalDays={totalDays}
-          />
-        } />
+        <Tooltip content={<CustomTooltip />} />
 
         {/* Goal weight reference line */}
         {goal != null && (
@@ -134,49 +133,35 @@ export default function RegressionChart({ regressionData, color, goal, startWeig
             label={{ value: 'Goal', fill: color, fontSize: 10, position: 'insideTopRight' }} />
         )}
 
-        {/* Pace-to-goal line — daily points make every date hoverable */}
-        {paceToGoalLine && (
+        {/* Pace-to-goal — dotted white */}
+        {goal != null && (
           <Line
-            data={paceToGoalLine}
-            dataKey="y"
+            dataKey="pace"
             stroke="#ffffff"
             strokeWidth={1.5}
             strokeDasharray="5 4"
             dot={false}
             activeDot={{ r: 4, fill: '#ffffff', strokeWidth: 0 }}
-            legendType="none"
           />
         )}
 
         {/* Regression trend line */}
         <Line
-          data={regressionLine}
-          dataKey="y"
+          dataKey="regression"
           stroke={color}
           strokeWidth={2}
           dot={false}
           activeDot={false}
-          strokeDasharray="none"
-          legendType="line"
         />
 
-        {/* Older weigh-ins (outside 21-day window) — dimmed */}
-        {historicalScatter.length > 0 && (
-          <Scatter
-            data={historicalScatter}
-            dataKey="y"
-            fill={color}
-            fillOpacity={0.3}
-            r={3}
-          />
-        )}
-
-        {/* 21-day window weigh-ins — full color, driving the regression */}
-        <Scatter
-          data={windowScatter}
-          dataKey="y"
-          fill={color}
-          r={4}
+        {/* Actual weigh-ins — bright (window) or dim (historical) dots, no connecting line */}
+        <Line
+          dataKey="actual"
+          stroke="transparent"
+          dot={<ActualDot />}
+          activeDot={{ r: 5, fill: color, strokeWidth: 0 }}
+          connectNulls={false}
+          isAnimationActive={false}
         />
       </ComposedChart>
     </ResponsiveContainer>
