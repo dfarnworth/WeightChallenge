@@ -210,14 +210,14 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     const effectiveStart = stats?.effectiveStart
     const priorLost = stats?.lost ?? 0
     const newLost = effectiveStart != null ? effectiveStart - w : 0
-    // Check which milestone (if any) is crossed — show the highest one hit
     const MILESTONES = [20, 15, 10]
     const hitMilestone = MILESTONES.find(m => newLost >= m && priorLost < m) ?? null
-    // Goal achieved — first time weight drops to or below goal
     const hitGoal = stats?.goal != null && stats?.current != null
       && w <= stats.goal && stats.current > stats.goal
-    // Gained vs most recent log (only if there's a prior entry to compare against)
     const gainedWeight = stats?.current != null && stats.logs.length > 0 && w > stats.current
+
+    // ── Play audio synchronously NOW, before any await kills the gesture context ──
+    if (gainedWeight && !hitMilestone && !hitGoal) playOink()
 
     setSaving(true)
     const result = await onLog(participant.id, date, w)
@@ -226,30 +226,25 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     setWeight('')
 
     if (result?.isPR) {
-      confetti({ particleCount: 80, angle: 60, spread: 55, origin: { x: 0, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
+      confetti({ particleCount: 80, angle: 60,  spread: 55, origin: { x: 0, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
     }
 
     if (hitGoal) {
-      // Maximum celebration — gold rain from all directions
       const gold = ['#fbbf24', '#f59e0b', '#fcd34d', '#ffffff', participant.color]
       setTimeout(() => {
-        confetti({ particleCount: 200, angle: 60,  spread: 80, origin: { x: 0,   y: 0.5 }, colors: gold })
-        confetti({ particleCount: 200, angle: 120, spread: 80, origin: { x: 1,   y: 0.5 }, colors: gold })
-        confetti({ particleCount: 150, angle: 90,  spread: 100, origin: { x: 0.5, y: 0 }, colors: gold })
+        confetti({ particleCount: 200, angle: 60,  spread: 80,  origin: { x: 0,   y: 0.5 }, colors: gold })
+        confetti({ particleCount: 200, angle: 120, spread: 80,  origin: { x: 1,   y: 0.5 }, colors: gold })
+        confetti({ particleCount: 150, angle: 90,  spread: 100, origin: { x: 0.5, y: 0   }, colors: gold })
         confetti({ particleCount: 100, angle: 90,  spread: 120, origin: { x: 0.5, y: 0.3 }, colors: gold })
       }, 100)
       setShowGoal(true)
     }
 
-    if (gainedWeight && !hitMilestone && !hitGoal) {
-      playOink()
-      setShowGain(true)
-    }
+    if (gainedWeight && !hitMilestone && !hitGoal) setShowGain(true)
 
     if (hitMilestone && !hitGoal) {
       const colors = [participant.color, '#fbbf24', '#f472b6', '#34d399', '#ffffff']
-      // Scale up the barrage for bigger milestones
       const count = hitMilestone === 20 ? 180 : hitMilestone === 15 ? 150 : 120
       setTimeout(() => {
         confetti({ particleCount: count, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
@@ -259,9 +254,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       setMilestoneLbs(hitMilestone)
     }
 
-    if (participant.id === 'javin') {
-      setJavinTauntPending(true)
-    }
+    if (participant.id === 'javin') setJavinTauntPending(true)
 
     setTimeout(() => setSaved(false), 2500)
   }
@@ -285,11 +278,10 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
-      {showGoal && <GoalModal participant={participant} onClose={() => setShowGoal(false)} />}
-      {showGain && <GainModal onClose={() => setShowGain(false)} />}
-      {milestoneLbs && (
-        <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />
-      )}
+      {showGoal    && <GoalModal      participant={participant} onClose={() => setShowGoal(false)} />}
+      {showGain    && <GainModal      onClose={() => setShowGain(false)} />}
+      {milestoneLbs && <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />}
+      {/* Javin taunt queues behind other modals — shows once everything else is cleared */}
       {javinTauntPending && !showGoal && !showGain && !milestoneLbs && (
         <JavinTauntModal onClose={() => setJavinTauntPending(false)} />
       )}
