@@ -77,30 +77,16 @@ function JavinTauntModal({ onClose }) {
   )
 }
 
-// Shared AudioContext — iOS requires reusing one context, not creating fresh each time
-let _audioCtx = null
-function getAudioCtx() {
-  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-  return _audioCtx
-}
-
 function playOink() {
   try {
-    const ctx = getAudioCtx()
-    // Resume is required on iOS Safari; scheduling 50ms ahead gives it time to unlock
-    ctx.resume()
-    const t    = ctx.currentTime + 0.05
-    const osc  = ctx.createOscillator()
-    const gain = ctx.createGain()
-    osc.connect(gain)
-    gain.connect(ctx.destination)
-    osc.type = 'sawtooth'
-    osc.frequency.setValueAtTime(520, t)
-    osc.frequency.exponentialRampToValueAtTime(160, t + 0.25)
-    gain.gain.setValueAtTime(0.4, t)
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35)
-    osc.start(t)
-    osc.stop(t + 0.4)
+    if (!window.speechSynthesis) return
+    // Speech synthesis is far more reliable than Web Audio on iOS Safari
+    window.speechSynthesis.cancel() // clear any queued speech
+    const u = new SpeechSynthesisUtterance('oink oink')
+    u.pitch  = 2     // max pitch — high and squealy
+    u.rate   = 1.3   // a bit fast
+    u.volume = 1
+    window.speechSynthesis.speak(u)
   } catch (e) { /* silently ignore */ }
 }
 
