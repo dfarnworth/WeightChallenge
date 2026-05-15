@@ -77,24 +77,31 @@ function JavinTauntModal({ onClose }) {
   )
 }
 
+// Shared AudioContext — iOS requires reusing one context, not creating fresh each time
+let _audioCtx = null
+function getAudioCtx() {
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+  return _audioCtx
+}
+
 function playOink() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const ctx = getAudioCtx()
+    // Resume is required on iOS Safari; scheduling 50ms ahead gives it time to unlock
+    ctx.resume()
+    const t    = ctx.currentTime + 0.05
     const osc  = ctx.createOscillator()
     const gain = ctx.createGain()
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.type = 'sawtooth'
-    // Descending pitch: starts squealy, drops low — classic oink shape
-    osc.frequency.setValueAtTime(520, ctx.currentTime)
-    osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.25)
-    gain.gain.setValueAtTime(0.35, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
-    osc.start(ctx.currentTime)
-    osc.stop(ctx.currentTime + 0.35)
-  } catch (e) {
-    // Silently ignore if audio isn't available
-  }
+    osc.frequency.setValueAtTime(520, t)
+    osc.frequency.exponentialRampToValueAtTime(160, t + 0.25)
+    gain.gain.setValueAtTime(0.4, t)
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35)
+    osc.start(t)
+    osc.stop(t + 0.4)
+  } catch (e) { /* silently ignore */ }
 }
 
 function GainModal({ onClose }) {
@@ -195,10 +202,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [editingDate, setEditingDate] = useState(null)
   const [editWeight, setEditWeight] = useState('')
   const [deletingDate, setDeletingDate] = useState(null)
-  const [milestoneLbs, setMilestoneLbs] = useState(null) // 10 | 15 | 20
-  const [showGoal, setShowGoal] = useState(false)
-  const [showGain, setShowGain] = useState(false)
-  const [javinTauntPending, setJavinTauntPending] = useState(false)
+  const [modalQueue, setModalQueue] = useState([]) // ordered list of modals to show
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
 
@@ -216,7 +220,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       && w <= stats.goal && stats.current > stats.goal
     const gainedWeight = stats?.current != null && stats.logs.length > 0 && w > stats.current
 
-    // ── Play audio synchronously NOW, before any await kills the gesture context ──
+    // Play oink synchronously BEFORE the await — any async gap kills iOS gesture context
     if (gainedWeight && !hitMilestone && !hitGoal) playOink()
 
     setSaving(true)
@@ -230,31 +234,30 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       confetti({ particleCount: 80, angle: 120, spread: 55, origin: { x: 1, y: 0.7 }, colors: [participant.color, '#fbbf24', '#ffffff'] })
     }
 
+    // Build the modal queue in priority order
+    const queue = []
+
     if (hitGoal) {
       const gold = ['#fbbf24', '#f59e0b', '#fcd34d', '#ffffff', participant.color]
-      setTimeout(() => {
-        confetti({ particleCount: 200, angle: 60,  spread: 80,  origin: { x: 0,   y: 0.5 }, colors: gold })
-        confetti({ particleCount: 200, angle: 120, spread: 80,  origin: { x: 1,   y: 0.5 }, colors: gold })
-        confetti({ particleCount: 150, angle: 90,  spread: 100, origin: { x: 0.5, y: 0   }, colors: gold })
-        confetti({ particleCount: 100, angle: 90,  spread: 120, origin: { x: 0.5, y: 0.3 }, colors: gold })
-      }, 100)
-      setShowGoal(true)
+      confetti({ particleCount: 200, angle: 60,  spread: 80,  origin: { x: 0,   y: 0.5 }, colors: gold })
+      confetti({ particleCount: 200, angle: 120, spread: 80,  origin: { x: 1,   y: 0.5 }, colors: gold })
+      confetti({ particleCount: 150, angle: 90,  spread: 100, origin: { x: 0.5, y: 0   }, colors: gold })
+      queue.push('goal')
     }
-
-    if (gainedWeight && !hitMilestone && !hitGoal) setShowGain(true)
 
     if (hitMilestone && !hitGoal) {
       const colors = [participant.color, '#fbbf24', '#f472b6', '#34d399', '#ffffff']
       const count = hitMilestone === 20 ? 180 : hitMilestone === 15 ? 150 : 120
-      setTimeout(() => {
-        confetti({ particleCount: count, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
-        confetti({ particleCount: count, angle: 120, spread: 70, origin: { x: 1,   y: 0.6 }, colors })
-        confetti({ particleCount: 80,   angle: 90,  spread: 90, origin: { x: 0.5, y: 0.3 }, colors })
-      }, 200)
-      setMilestoneLbs(hitMilestone)
+      confetti({ particleCount: count, angle: 60,  spread: 70, origin: { x: 0,   y: 0.6 }, colors })
+      confetti({ particleCount: count, angle: 120, spread: 70, origin: { x: 1,   y: 0.6 }, colors })
+      confetti({ particleCount: 80,   angle: 90,  spread: 90, origin: { x: 0.5, y: 0.3 }, colors })
+      queue.push(`milestone-${hitMilestone}`)
     }
 
-    if (participant.id === 'javin') setJavinTauntPending(true)
+    if (gainedWeight && !hitMilestone && !hitGoal) queue.push('gain')
+    if (participant.id === 'javin') queue.push('javin')
+
+    if (queue.length > 0) setModalQueue(queue)
 
     setTimeout(() => setSaved(false), 2500)
   }
@@ -274,17 +277,19 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     setDeletingDate(null)
   }
 
+  const dismissModal = () => setModalQueue(q => q.slice(1))
+
   const sortedLogs = [...(stats?.logs ?? [])].sort((a, b) => b.date.localeCompare(a.date))
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
-      {showGoal    && <GoalModal      participant={participant} onClose={() => setShowGoal(false)} />}
-      {showGain    && <GainModal      onClose={() => setShowGain(false)} />}
-      {milestoneLbs && <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />}
-      {/* Javin taunt queues behind other modals — shows once everything else is cleared */}
-      {javinTauntPending && !showGoal && !showGain && !milestoneLbs && (
-        <JavinTauntModal onClose={() => setJavinTauntPending(false)} />
+      {/* Modal queue — always shows only the first item; dismiss advances to the next */}
+      {modalQueue[0] === 'goal'      && <GoalModal      participant={participant} onClose={dismissModal} />}
+      {modalQueue[0] === 'gain'      && <GainModal      onClose={dismissModal} />}
+      {modalQueue[0]?.startsWith('milestone') && (
+        <MilestoneModal participant={participant} lbs={parseInt(modalQueue[0].split('-')[1])} onClose={dismissModal} />
       )}
+      {modalQueue[0] === 'javin'     && <JavinTauntModal onClose={dismissModal} />}
 
       {/* Log form */}
       <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5">
