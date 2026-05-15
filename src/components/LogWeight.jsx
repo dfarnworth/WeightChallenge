@@ -53,6 +53,30 @@ function GoalModal({ participant, onClose }) {
   )
 }
 
+function JavinTauntModal({ onClose }) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-900 border-2 border-purple-500/60 rounded-3xl p-6 mx-4 max-w-xs w-full text-center shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="text-6xl mb-3">😤</div>
+        <h2 className="text-2xl font-black text-purple-400 mb-2 tracking-tight">Dan will beat you.</h2>
+        <p className="text-slate-400 text-sm mb-6">Just thought you should know. 💜</p>
+        <button
+          onClick={onClose}
+          className="w-full py-3 rounded-xl font-black text-base bg-purple-600 hover:bg-purple-500 text-white transition-colors active:scale-95"
+        >
+          We'll see about that 😤
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function playOink() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)()
@@ -175,6 +199,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
   const [milestoneLbs, setMilestoneLbs] = useState(null) // 10 | 15 | 20
   const [showGoal, setShowGoal] = useState(false)
   const [showGain, setShowGain] = useState(false)
+  const [javinTauntPending, setJavinTauntPending] = useState(false)
 
   const todayEntry = stats?.logs?.find(l => l.date === date)
 
@@ -234,6 +259,10 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       setMilestoneLbs(hitMilestone)
     }
 
+    if (participant.id === 'javin') {
+      setJavinTauntPending(true)
+    }
+
     setTimeout(() => setSaved(false), 2500)
   }
 
@@ -260,6 +289,9 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
       {showGain && <GainModal onClose={() => setShowGain(false)} />}
       {milestoneLbs && (
         <MilestoneModal participant={participant} lbs={milestoneLbs} onClose={() => setMilestoneLbs(null)} />
+      )}
+      {javinTauntPending && !showGoal && !showGain && !milestoneLbs && (
+        <JavinTauntModal onClose={() => setJavinTauntPending(false)} />
       )}
 
       {/* Log form */}
