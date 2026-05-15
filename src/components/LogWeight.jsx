@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import confetti from 'canvas-confetti'
 import { formatDate } from '../utils/calculations'
 import { deleteLog, postLog } from '../api'
@@ -53,7 +53,28 @@ function GoalModal({ participant, onClose }) {
   )
 }
 
+function playOink() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc  = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain)
+    gain.connect(ctx.destination)
+    osc.type = 'sawtooth'
+    // Descending pitch: starts squealy, drops low — classic oink shape
+    osc.frequency.setValueAtTime(520, ctx.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(160, ctx.currentTime + 0.25)
+    gain.gain.setValueAtTime(0.35, ctx.currentTime)
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.35)
+  } catch (e) {
+    // Silently ignore if audio isn't available
+  }
+}
+
 function GainModal({ onClose }) {
+  useEffect(() => { playOink() }, [])
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
