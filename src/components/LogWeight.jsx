@@ -98,7 +98,6 @@ function playOink() {
 }
 
 function GainModal({ onClose }) {
-  useEffect(() => { playOink() }, [])
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
@@ -244,6 +243,7 @@ export default function LogWeight({ participant, stats, onLog, onRefresh, todayS
     }
 
     if (gainedWeight && !hitMilestone && !hitGoal) {
+      playOink()
       setShowGain(true)
     }
 
