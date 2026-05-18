@@ -125,8 +125,6 @@ function StatCard({ stats, rank }) {
   )
 }
 
-const STREAK_THRESHOLD = 2
-
 export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser, onSeed, seeded }) {
   const day = dayOfCompetition()
   const hasData = logs.length > 0
@@ -134,16 +132,15 @@ export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser
   const recentPRs = prs.filter(pr => pr.date === todayStr())
   const prByParticipant = Object.fromEntries(recentPRs.map(pr => [pr.participant, pr]))
 
-  // Build merged achievement banner list: anyone with a PR today OR an active streak (>=3)
+  // Build merged achievement banner list:
+  //   - weight PR today, OR
+  //   - active streak that's a new STREAK personal record (>= 2 AND > previous best)
   const banners = []
-  const seenIds = new Set()
   for (const s of allStats) {
-    const pid = s.participant.id
-    const pr  = prByParticipant[pid]
-    const hasStreak = s.streak >= STREAK_THRESHOLD
-    if (pr || hasStreak) {
-      banners.push({ participant: s.participant, pr, streak: hasStreak ? s.streak : 0 })
-      seenIds.add(pid)
+    const pr = prByParticipant[s.participant.id]
+    const isStreakPR = s.streak >= 2 && s.streak > s.prevBestStreak
+    if (pr || isStreakPR) {
+      banners.push({ participant: s.participant, pr, streak: isStreakPR ? s.streak : 0 })
     }
   }
 
@@ -241,6 +238,8 @@ export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser
                 const prevDelta = prevLog ? s.current - prevLog.weight : null
                 const prevPct = prevLog ? (prevLog.weight - s.current) / prevLog.weight * 100 : null
                 const isFirstObserver = s.participant.observer && !ranked[i - 1]?.participant.observer
+                const loggedToday = s.logs.some(l => l.date === todayStr())
+                const missingToday = s.logs.length > 0 && !loggedToday
                 return (
                   <>
                   {isFirstObserver && (
@@ -254,7 +253,11 @@ export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser
                       </td>
                     </tr>
                   )}
-                  <tr key={s.participant.id} className="border-t border-slate-800">
+                  <tr
+                    key={s.participant.id}
+                    className={`border-t border-slate-800 ${missingToday ? 'outline outline-1 outline-red-500/40 bg-red-500/5' : ''}`}
+                    title={missingToday ? "Hasn't logged today" : undefined}
+                  >
                     <td className="px-3 py-3 flex items-center gap-1">
                       <span>{s.participant.observer ? '👤' : (MEDALS[i] ?? `#${i + 1}`)}</span>
                       <span className="font-bold" style={{ color: s.participant.color }}>{s.participant.initials}</span>
