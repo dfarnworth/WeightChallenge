@@ -125,7 +125,7 @@ function StatCard({ stats, rank }) {
   )
 }
 
-const STREAK_THRESHOLD = 3
+const STREAK_THRESHOLD = 2
 
 export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser, onSeed, seeded }) {
   const day = dayOfCompetition()
