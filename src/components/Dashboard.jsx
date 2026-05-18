@@ -34,7 +34,7 @@ function ProgressBar({ pct, color, target }) {
 }
 
 function StatCard({ stats, rank }) {
-  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, projectedEndWeight, weighIns } = stats
+  const { participant: p, current, goal, lost, pctLost, remaining, pctToGoal, pace, projectedFinish, projectedEndWeight, weighIns, streak } = stats
   const isGaining = lost < 0
   const linearTarget = dayOfCompetition() / COMPETITION_DAYS
 
@@ -50,6 +50,11 @@ function StatCard({ stats, rank }) {
             {p.initials}
           </span>
           <span className="font-semibold">{p.name}</span>
+          {streak >= 2 && (
+            <span className="text-xs font-bold text-orange-300 bg-orange-500/10 border border-orange-500/30 rounded-full px-2 py-0.5">
+              🔥 {streak}
+            </span>
+          )}
         </div>
         <span className="text-xl">{MEDALS[rank] ?? `#${rank + 1}`}</span>
       </div>
@@ -120,28 +125,64 @@ function StatCard({ stats, rank }) {
   )
 }
 
+const STREAK_THRESHOLD = 3
+
 export default function Dashboard({ ranked, allStats, logs, prs = [], activeUser, onSeed, seeded }) {
   const day = dayOfCompetition()
   const hasData = logs.length > 0
-  // Show banner only if the PR was set today (Central Time) — disappears at midnight CT
+  // PRs set today (Central Time) — banner expires at midnight CT
   const recentPRs = prs.filter(pr => pr.date === todayStr())
+  const prByParticipant = Object.fromEntries(recentPRs.map(pr => [pr.participant, pr]))
+
+  // Build merged achievement banner list: anyone with a PR today OR an active streak (>=3)
+  const banners = []
+  const seenIds = new Set()
+  for (const s of allStats) {
+    const pid = s.participant.id
+    const pr  = prByParticipant[pid]
+    const hasStreak = s.streak >= STREAK_THRESHOLD
+    if (pr || hasStreak) {
+      banners.push({ participant: s.participant, pr, streak: hasStreak ? s.streak : 0 })
+      seenIds.add(pid)
+    }
+  }
 
   return (
     <div className="px-4 py-4 flex flex-col gap-6">
-      {/* PR celebration banners */}
-      {recentPRs.map(pr => {
-        const p = PARTICIPANTS.find(p => p.id === pr.participant)
-        if (!p) return null
+      {/* Achievement banners — PRs and active loss streaks */}
+      {banners.map(({ participant: p, pr, streak }) => {
+        const both = pr && streak
+        const icon = pr ? '🏆' : '🔥'
+        const titleColor = pr ? 'text-amber-300' : 'text-orange-300'
+        const borderColor = pr ? 'border-amber-500/40 bg-amber-500/10' : 'border-orange-500/40 bg-orange-500/10'
         return (
-          <div key={pr.participant} className="rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 flex items-center gap-3">
-            <span className="text-3xl">🏆</span>
-            <div>
-              <p className="text-sm font-bold text-amber-300">New Personal Record!</p>
+          <div key={p.id} className={`rounded-2xl border px-4 py-3 flex items-center gap-3 ${borderColor}`}>
+            <span className="text-3xl">{icon}{streak > 0 && !pr ? '' : ''}</span>
+            <div className="flex-1">
+              <p className={`text-sm font-bold ${titleColor}`}>
+                {both ? 'New PR + Hot Streak!' : pr ? 'New Personal Record!' : `${streak}-Day Loss Streak! 🔥`}
+              </p>
               <p className="text-xs text-slate-300 mt-0.5">
                 <span className="font-semibold" style={{ color: p.color }}>{p.name}</span>
-                {' '}hit a new low —{' '}
-                <span className="font-bold text-white">{Number(pr.weight).toFixed(1)} lbs</span>
-                {' '}on {formatDate(pr.date)}
+                {pr && (
+                  <>
+                    {' '}hit a new low —{' '}
+                    <span className="font-bold text-white">{Number(pr.weight).toFixed(1)} lbs</span>
+                    {' '}on {formatDate(pr.date)}
+                  </>
+                )}
+                {pr && streak && (
+                  <>
+                    {' '}·{' '}
+                    <span className="font-bold text-orange-300">{streak} days</span> losing in a row 🔥
+                  </>
+                )}
+                {!pr && streak > 0 && (
+                  <>
+                    {' '}is on a{' '}
+                    <span className="font-bold text-orange-300">{streak}-day</span> loss streak. Don't break the chain! 🔥
+                  </>
+                )}
               </p>
             </div>
           </div>

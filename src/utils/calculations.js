@@ -53,6 +53,15 @@ export function computeStats(participant, logs) {
   const remaining = goal != null ? current - goal : null
   const pctToGoal = goal != null && effectiveStart != null ? lost / (effectiveStart - goal) : 0
 
+  // Loss streak: walk back from most recent log, count consecutive entries
+  // where weight strictly decreased vs the previous logged day.
+  // (Gaps in days are fine — what matters is the trajectory between logs.)
+  let streak = 0
+  for (let i = myLogs.length - 1; i > 0; i--) {
+    if (myLogs[i].weight < myLogs[i - 1].weight) streak++
+    else break
+  }
+
   // Pace: linear regression over rolling 21-day window, requires 7+ weigh-ins
   const ROLLING_DAYS = 21
   const MIN_WEIGH_INS = 7
@@ -121,6 +130,7 @@ export function computeStats(participant, logs) {
     projectedFinish,
     projectedEndWeight,
     regressionData,
+    streak,
     logs: myLogs,
   }
 }
